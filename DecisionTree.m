@@ -1,11 +1,11 @@
 classdef DecisionTree < handle
     properties(SetAccess = 'private') % fields with default vals
         maxDepth = 10;
-        numFeatures = 400;
-        numThresholds = 5;
-        numClasses;
-        factory = {add, mult, sub};
-        numFactory = 3;
+        numFeature = 400;
+        numThreshold = 5;
+        numClass = 21;
+        factory = {@addTwo, @subAbs, @sub, @unary};
+        labelWeights = ones(numClass, 1);
         root;
         numNodes = 1;
     end
@@ -18,18 +18,20 @@ classdef DecisionTree < handle
     end
     %%%%%%%%%% Public Methods %%%%%%%%%%
     methods        
-        function DT = DecisionTree(maxDepth, numFeatures, numThresholds, ...
-                                   numClasses)
+        function DT = DecisionTree(maxDepth, numFeature, numThreshold, ...
+                                   numClass, factory, labelWeights)
             if nargin > 0
                 DT.maxDepth = maxDepth;
-                DT.numFeatures = numFeatures;
-                DT.numThresholds = numThresholds;
-                DT.numClasses = numClasses;
+                DT.numFeature = numFeature;
+                DT.numThreshold = numThreshold;
+                DT.numClass = numClass;
+                DT.factory = factory;
+                DT.labelWeights = labelWeights;
             end
         end
         
-        function trainDepthFirst(data, depth)
-            DT.root = computeDepthFirst(TreeNode(), data, depth);            
+        function trainDepthFirst(data)
+            DT.root = computeDepthFirst(TreeNode(), data, 0);            
         end
         
         % fill the tree with all of training data
@@ -38,7 +40,7 @@ classdef DecisionTree < handle
         end              
         
         function dist = classify(point)
-            return findLeaf(root, point);
+            dist = findLeaf(root, point);
         end
         
         function bost = computeBost(data)
@@ -59,11 +61,12 @@ classdef DecisionTree < handle
             if depth == maxDepth || allSameClass(data)
                 node.isLeaf = True;
                 node.distribution = computeDistribution(data);
-                return node;
+                return;
             end
             % if not leaf, find the best split
             bestScore = -Inf; bestDecider = [];
-            for i = 1:numFeatures
+            numFactory = numel(factory);
+            for i = 1:numFeature
                 decider = factory{mod(i, numFactory)}
                 values = computeFeature(decider, data);
                 [score, threshold] = computeBestThreshold(values, data);
@@ -83,14 +86,14 @@ classdef DecisionTree < handle
         
         function [bestScore, bestThreshold] = computeBestThreshold(values, labels)
             % candidate threshold sampled from this values gaussian
-            thresholds = randn(numThresholds).*std(values) + mean(values);
+            thresholds = randn(numThreshold).*std(values) + mean(values);
             N = numel(values);
-            infogains = zeros(numThresholds, 1);
-            for i = 1:numThresholds
+            infogains = zeros(numThreshold, 1);
+            for i = 1:numThreshold
                 Linds = find(values < thresholds(i));
                 Rinds = 1:N; Rinds(Linds) = [];                
-                LDist = 1/numel(Linds).*hist(labels(Linds), numClasses);
-                RDist = 1/numel(Rinds).*hist(labels(Rinds), numClasses);
+                LDist = 1/numel(Linds).*hist(labels(Linds), numClass);
+                RDist = 1/numel(Rinds).*hist(labels(Rinds), numClass);
                 [EL, ER] = entropy(LDist, RDist);
                 infogains(i) = -1/N*(numel(Linds)*EL + numel(Rinds)*ER);
             end
@@ -101,7 +104,7 @@ classdef DecisionTree < handle
         % computes the expected gain in information 
         function [E1, E2] = entropy(h1, h2)
             E1 = 0; E2 = 0;
-            for i=1:numClasses
+            for i=1:numClass
                 E1 = E1 - h1(i)*log2(h1(i));
                 E2 = E2 - h2(i)*log2(h2(i));
             end
@@ -109,7 +112,7 @@ classdef DecisionTree < handle
         
         % decider is a function handle, data is a set of d x d patches
         % returns a scalar value for each data point.
-        function values = computeFeature(decider, data)
+        function [values] = computeFeature(decider, data)
             values = zeros(numel(data), 1);
         end
         
@@ -125,10 +128,6 @@ classdef DecisionTree < handle
             left = data(Linds);
             right = data(Rinds);
         end
-        
-        function values =  computeFeature(decider, data)
-            
-        end
 
         %%fill the tree with data to build distributions at each leaf
         function fill(node, data)
@@ -141,13 +140,13 @@ classdef DecisionTree < handle
                 if ~isempty(rightData), fill(node.right, rightData),end
             end
         end            
-        function findLeaf(node, point)
-            if node.isLeaf, return node, end
+        function node = findLeaf(node, point)
+            if node.isLeaf, return , end
             value = computeFeature(node.decider.feat, point);
             if value < node.decider.threshold % left
-                return findLeaf(node.left, point);
+                findLeaf(node.left, point);
             else 
-                return findLeaf(node.right, point);
+                findLeaf(node.right, point);
             end
         end
         
@@ -165,7 +164,7 @@ classdef DecisionTree < handle
         % % pre-order traversal
         % function str = printNode(node)
         %     node.id
-        % end
+        % end        
     end
     %%%%%%%%%% end of Private methods %%%%%%%%%%        
 end
