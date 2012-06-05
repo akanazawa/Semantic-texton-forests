@@ -1,4 +1,4 @@
-function splits = sampleTrainingImages(config_file)
+function [splits, data] = sampleTrainingImages(config_file)
 % creates nImages split for each tree and samples boxSize x boxSize
 % patches for each image
 % returns a cell of nImages x 1 each containing names of image names
@@ -9,42 +9,46 @@ imageNames = textscan(fid, '%s');
 imageNames = imageNames{1};
 fclose(fid);
 
-gtNames = regexprep(imageNames, '\.bmp$', '_GT.bmp');
-
+labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames, '\.bmp$', '_GT.bmp'));
+imageNames = strcat([DIR.images, '/'], imageNames);
 numTrain = numel(imageNames);
 
-inds = randperm(numTrain);
+%% first select patches for each training images
+rad = (boxSize-1)/2; % of patch
+
+data = struct([]);
+k = 1;
+wait = waitbar(0, 'preprocessing data');
+for i = 1:numTrain
+    [r, c, ~] = size(imread(imageNames{i}));
+    indices = reshape(1:r*c, r, c);
+    indices = indices(boxSize:sampleFreq:r-boxSize, boxSize:sampleFreq:c-boxSize);
+    [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
+    I = imread(imageNames{i});
+    L = imread(labelNames{i});
+    for j = 1:numel(indices)                                    
+        if isKey(CLASSES, sprintf('%d', L(ri(j), ci(j), :)))            
+            data(k).label = CLASSES(sprintf('%d', L(ri(j), ci(j), :)));
+            data(k).patch = I(ri(j)-rad:ri(j)+rad, ...
+                              ci(j)-rad:ci(j)+rad, :);            
+            sfigure; imagesc(data(k).patch);
+            k = k + 1;
+        end
+
+    end
+    keyboard
+    wait = waitbar(i/numTrain, wait, sprintf(['preprocessing training ' ...
+                        'image: %d'], i));
+end
+close(wait);
+save(path.trainingPatches, 'data');
+
 splits = cell(numTree, 1);
 
-% assumes all images are same size
-[r, c, ~] = size(imread(imageNames{1}));
-subR = numel(boxSize:sampleFreq:r-boxSize); 
-subC = numel(boxSize:sampleFreq:c-boxSize); 
-numPatches = subR*subC;
-
 for i = 1:numTree
-    Is = imageNames(inds((i-1)*numTrainingPerTree+1:i*numTrainingPerTree));
-    data = zeros(numTrainingPerTree*4, 1);
-    for j = 1:numTrainingPerTree
-        I = RGB2Luv(imread(Is{j}));
-        centerPixels = I(boxSize+1:sampleFreq:r-boxSize, boxSize+1:sampleFreq:c-boxSize, :);
-        inds = find(rand(numPatches, 1) < dataPerTree); % only use some
-        [ri, ci] = ind2sub([r,c], inds);        
-        for k = 1:numel(inds)
-            
-        end
-       
-    end
-    % for j = 1:numTrainingPerTree
-    %     I = RGB2Luv(imread(Is{j}));
-    %     inds = find(rand(numPatches, 1) < dataPerTree); % only use some
-    %     [ri, ci] = ind2sub([r,c], inds);        
-    %     for k = 1:numel(inds)
-
-    %     end
-    %     centerPixels = I(boxSize:sampleFreq:r-boxSize, boxSize:2:c-boxSize, :)
-    % end
+    splits{i} = data(rand(numel(data), 1) < dataPerTree);    
 end
 
 save(path.trainingSplit, 'splits');
+
 

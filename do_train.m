@@ -8,12 +8,13 @@ function do_train(config_file)
 
 eval(config_file); % load settings
 
-if ~exist(path.trainingSamples)
-    splits = sampleTrainingImages(config_file);
+if ~exist(path.trainingSplit)
+    [splits, data] = sampleTrainingImages(config_file);
 else
-    load(path.trainingSamples);
+    load(path.trainingSample);
+    load(path.trainingPatches);
 end
-
+keyboard
 % compute weight for labels
 if ~exist(path.labelWeights)
     labelWeights = zeros(numClasses, 1);

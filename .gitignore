@@ -1,0 +1,53 @@
+# make git ignore these files:
+
+### Project Specific ###
+*.tex
+*.mat
+
+
+### Generic Stuff ###
+## c++ stuff
+*.slo
+*.lo
+*.o
+*.so
+*.lai
+*.la
+*.a
+
+# emacs stuff
+*.*#
+*.*~
+
+# latex stuff
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.fdb_latexmk
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.log
+*.lot
+*.nav
+*.nlo
+*.out
+*.pdfsync
+*.ps
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.maf
+*.mtc
+*.mtc0
+
+
+# other stuff
+.DS_Store
