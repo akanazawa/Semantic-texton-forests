@@ -3,10 +3,14 @@ classdef TreeNode < handle
         left;
         right;
         isLeaf = false;
+        % decider is a struct that holds
+        % .method = string specifying which function to cuse in computeFeature.m
+        % .feat = rows, cols, and channels to use
+        % .threshold 
         decider;
         distribution;
-        level = 0;
-        node.id = -1;
+        level = -1;
+        id = -1;
     end
     
     methods

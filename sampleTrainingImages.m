@@ -18,6 +18,7 @@ rad = (boxSize-1)/2; % of patch
 
 data = struct([]);
 k = 1;
+cform = makecform('srgb2lab');
 wait = waitbar(0, 'preprocessing data');
 for i = 1:numTrain
     [r, c, ~] = size(imread(imageNames{i}));
@@ -25,18 +26,18 @@ for i = 1:numTrain
     indices = indices(boxSize:sampleFreq:r-boxSize, boxSize:sampleFreq:c-boxSize);
     [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
     I = imread(imageNames{i});
-    L = imread(labelNames{i});
-    for j = 1:numel(indices)                                    
-        if isKey(CLASSES, sprintf('%d', L(ri(j), ci(j), :)))            
-            data(k).label = CLASSES(sprintf('%d', L(ri(j), ci(j), :)));
-            data(k).patch = I(ri(j)-rad:ri(j)+rad, ...
-                              ci(j)-rad:ci(j)+rad, :);            
-            sfigure; imagesc(data(k).patch);
-            k = k + 1;
-        end
-
-    end
+    Ilab = applycform(I, cform);
     keyboard
+    L = imread(labelNames{i});
+    for j = 1:numel(indices)
+        rgb = strtrim((num2str(L(ri(j), ci(j), :), '%d%d%d')));
+        if isKey(CLASSES, rgb) 
+            data(k).label = CLASSES(rgb);
+            data(k).patch = I(ri(j)-rad:ri(j)+rad, ...
+                              ci(j)-rad:ci(j)+rad, :);
+            k = k + 1;
+        end        
+    end
     wait = waitbar(i/numTrain, wait, sprintf(['preprocessing training ' ...
                         'image: %d'], i));
 end
@@ -50,5 +51,3 @@ for i = 1:numTree
 end
 
 save(path.trainingSplit, 'splits');
-
-

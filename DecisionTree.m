@@ -3,9 +3,8 @@ classdef DecisionTree < handle
         maxDepth = 10;
         numFeature = 400;
         numThreshold = 5;
-        numClass = 21;
-        factory = {@addTwo, @subAbs, @sub, @unary};
-        labelWeights = ones(numClass, 1);
+        factory = {'addTwo', 'subAbs', 'sub', 'unary'};
+        labelWeights;
         root;
         numNodes = 1;
     end
@@ -19,19 +18,20 @@ classdef DecisionTree < handle
     %%%%%%%%%% Public Methods %%%%%%%%%%
     methods        
         function DT = DecisionTree(maxDepth, numFeature, numThreshold, ...
-                                   numClass, factory, labelWeights)
+                                   factory, labelWeights)
             if nargin > 0
                 DT.maxDepth = maxDepth;
                 DT.numFeature = numFeature;
                 DT.numThreshold = numThreshold;
-                DT.numClass = numClass;
                 DT.factory = factory;
                 DT.labelWeights = labelWeights;
             end
         end
         
-        function trainDepthFirst(data)
-            DT.root = computeDepthFirst(TreeNode(), data, 0);            
+        function DT = trainDepthFirst(DT, data)
+            % Reset the tree
+            DT.numNodes = 1;
+            DT.root = DT.computeDepthFirst(TreeNode(), data, 0);            
         end
         
         % fill the tree with all of training data
@@ -56,46 +56,60 @@ classdef DecisionTree < handle
     %%%%%%%%%% Private methods %%%%%%%%%%
     methods(Access=private)
         %%%%%%%%%% for learning a tree %%%%%%%%%%
-        function node = computeDepthFirst(node, data, depth)
+        function node = computeDepthFirst(DT, node, data, depth)
             if isempty(data), return, end
-            if depth == maxDepth || allSameClass(data)
-                node.isLeaf = True;
-                node.distribution = computeDistribution(data);
+            if depth == DT.maxDepth || numel(unique([data.label]))==0
+                classDist = hist(double([data.label]), numel(DT.labelWeights))';
+                node = TreeNode(classDist.*DT.labelWeights);
+                node.id = DT.numNodes;
+                DT.numNodes = DT.numNodes + 1;
+                node.level = depth;
                 return;
             end
             % if not leaf, find the best split
             bestScore = -Inf; bestDecider = [];
-            numFactory = numel(factory);
-            for i = 1:numFeature
-                decider = factory{mod(i, numFactory)}
-                values = computeFeature(decider, data);
-                [score, threshold] = computeBestThreshold(values, data);
+            numFactory = numel(DT.factory);
+            fprintf('computing the best feature split for node %d\n', ...
+                    DT.numNodes);
+            for i = 1:DT.numFeature
+                method = DT.factory{mod(i, numFactory)+1};
+                [values, decider] = computeFeature(data, method);
+                [score, threshold] = DT.computeBestThreshold(values, data);
                 if score > bestScore
                     bestScore = score;
-                    bestDecider.feat = decider;
+                    bestDecider = decider;
                     bestDecider.threshold = threshold;
                 end            
             end            
-            [leftData, rightData] = splitPoints(bestDecider, data);
-            node.id = numNodes;
-            numNodes = numNodes + 1;
+            [leftData, rightData] = DT.splitPoints(bestDecider, data);
+            node.id = DT.numNodes;
+            node.level = depth;
+            DT.numNodes = DT.numNodes + 1;
             node.decider = bestDecider;
-            node.left = computeDepthFirst(TreeNode(), leftData, depth+1);
-            node.right = computeDepthFirst(TreeNode(), rightData, depth+1);
+            node.left = DT.computeDepthFirst(TreeNode(), leftData, depth+1);
+            node.right = DT.computeDepthFirst(TreeNode(), rightData, depth+1);
         end
         
-        function [bestScore, bestThreshold] = computeBestThreshold(values, labels)
+        function [bestScore, bestThreshold] = computeBestThreshold(DT,values, data)
             % candidate threshold sampled from this values gaussian
-            thresholds = randn(numThreshold).*std(values) + mean(values);
+            thresholds = randn(DT.numThreshold, 1).*std(values) + mean(values);
             N = numel(values);
-            infogains = zeros(numThreshold, 1);
-            for i = 1:numThreshold
-                Linds = find(values < thresholds(i));
-                Rinds = 1:N; Rinds(Linds) = [];                
-                LDist = 1/numel(Linds).*hist(labels(Linds), numClass);
-                RDist = 1/numel(Rinds).*hist(labels(Rinds), numClass);
-                [EL, ER] = entropy(LDist, RDist);
-                infogains(i) = -1/N*(numel(Linds)*EL + numel(Rinds)*ER);
+            infogains = ones(DT.numThreshold, 1)*-Inf;
+            labels = double([data.label]);
+            dirichlet = 1e-4;
+            numClass = length(DT.labelWeights);
+            for i = 1:DT.numThreshold
+                toLeft = values < thresholds(i);
+                numL = numel(labels(toLeft)) + dirichlet;
+                numR = numel(labels(~toLeft)) + dirichlet;
+                LDist = 1/numL.*(hist(labels(toLeft), numClass) ...
+                                 + dirichlet);
+                RDist = 1/numR.*(hist(labels(~toLeft), numClass) ...
+                                 + dirichlet);
+                % calc entropy
+                EL = -sum(LDist.*log2(LDist));
+                ER = -sum(RDist.*log2(RDist));
+                infogains(i) = -1/N*(numL*EL + numR*ER);
             end
             [bestScore, bestind] = max(infogains);
             bestThreshold = thresholds(bestind);
@@ -104,29 +118,17 @@ classdef DecisionTree < handle
         % computes the expected gain in information 
         function [E1, E2] = entropy(h1, h2)
             E1 = 0; E2 = 0;
-            for i=1:numClass
+            for i=1:numel(h1)
                 E1 = E1 - h1(i)*log2(h1(i));
                 E2 = E2 - h2(i)*log2(h2(i));
             end
         end
         
-        % decider is a function handle, data is a set of d x d patches
-        % returns a scalar value for each data point.
-        function [values] = computeFeature(decider, data)
-            values = zeros(numel(data), 1);
-        end
-        
-        % returns if all datum has the same label
-        function allSame = allSameClass(data)
-            
-        end
-        
-        function [left right] = splitPoints(decider, thresholds, data)
-            values = computeFeature(decider.feat, data);
-            Linds = find(values < decider.threshold);
-            Rinds = 1:N; Rinds(Linds) = [];                
-            left = data(Linds);
-            right = data(Rinds);
+        function [left right] = splitPoints(DT, decider, data)
+            [values, ~] = computeFeature(data, decider);
+            toLeft = values < decider.threshold;
+            left = data(toLeft);
+            right = data(~toLeft);
         end
 
         %%fill the tree with data to build distributions at each leaf
@@ -142,7 +144,7 @@ classdef DecisionTree < handle
         end            
         function node = findLeaf(node, point)
             if node.isLeaf, return , end
-            value = computeFeature(node.decider.feat, point);
+            [value, ~] = computeFeature(point, decider);
             if value < node.decider.threshold % left
                 findLeaf(node.left, point);
             else 
