@@ -36,7 +36,7 @@ classdef DecisionTree < handle
         
         % fill the tree with all of training data
         function fillAll(data)
-            fill(root, data);
+            DT.fill(DT.root, data);
         end              
         
         function dist = classify(point)
@@ -59,8 +59,10 @@ classdef DecisionTree < handle
         function node = computeDepthFirst(DT, node, data, depth)
             if isempty(data), return, end
             if depth == DT.maxDepth || numel(unique([data.label]))==0
-                classDist = hist(double([data.label]), numel(DT.labelWeights))';
-                node = TreeNode(classDist.*DT.labelWeights);
+                %classDist = hist(double([data.label]), numel(DT.labelWeights))';
+                classDist = []; % will fill this out later
+                %node = TreeNode(classDist.*DT.labelWeights);
+                node = TreeNode(classDist);
                 node.id = DT.numNodes;
                 DT.numNodes = DT.numNodes + 1;
                 node.level = depth;
@@ -72,7 +74,8 @@ classdef DecisionTree < handle
             fprintf('computing the best feature split for node %d\n', ...
                     DT.numNodes);
             for i = 1:DT.numFeature
-                method = DT.factory{mod(i, numFactory)+1};
+                %                method = DT.factory{mod(i, numFactory)+1};
+                method = mod(i, numFactory)+1;
                 [values, decider] = computeFeature(data, method);
                 [score, threshold] = DT.computeBestThreshold(values, data);
                 if score > bestScore
@@ -81,7 +84,12 @@ classdef DecisionTree < handle
                     bestDecider.threshold = threshold;
                 end            
             end            
-            [leftData, rightData] = DT.splitPoints(bestDecider, data);
+            % do the split
+            [values, ~] = computeFeature(data, bestDecider);
+            toLeft = values < bestDecider.threshold;
+            leftData = data(toLeft);
+            rightData = data(~toLeft);
+            % housekeeping
             node.id = DT.numNodes;
             node.level = depth;
             DT.numNodes = DT.numNodes + 1;
@@ -123,21 +131,16 @@ classdef DecisionTree < handle
                 E2 = E2 - h2(i)*log2(h2(i));
             end
         end
-        
-        function [left right] = splitPoints(DT, decider, data)
-            [values, ~] = computeFeature(data, decider);
-            toLeft = values < decider.threshold;
-            left = data(toLeft);
-            right = data(~toLeft);
-        end
 
         %%fill the tree with data to build distributions at each leaf
         function fill(node, data)
-            for d = data
-                node.distribution(d.label, :) = node.distribution(d.label,:)  + 1;
-            end
+            node.distributions = hist(double([data.label]), numel(DT.labelWeights))'.*...
+                                 DT.labelWeights;
             if ~node.isLeaf
-                [leftData, rightData] = splitPoints(node.decider, data);
+                [values, ~] = computeFeature(data, node.decider);
+                toLeft = values < node.decider.threshold;
+                leftData = data(toLeft);
+                rightData = data(toRight);
                 if ~isempty(leftData), fill(node.left, leftData),end
                 if ~isempty(rightData), fill(node.right, rightData),end
             end
@@ -153,16 +156,29 @@ classdef DecisionTree < handle
         end
         
         function bost = findCounts(node, bost, data)
-           % update the count by the total number of 
-            node.id;
+           % update the count by the total number of data that
+           % fellin there
             bost(node.id) = numel(data);
             if ~node.isLeaf
-                [leftData, rightData] = splitPoints(node.decider, data);
-                if ~isempty(leftData), findCounts(node.left, leftData),end
-                if ~isempty(rightData), findCounts(node.right, rightData),end                
+                [values, ~] = computeFeature(data, node.decider);
+                toLeft = values < node.decider.threshold;
+                leftData = data(toLeft);
+                rightData = data(toRight);
+                if ~isempty(leftData)
+                    findCounts(node.left, bost, leftData);
+                end;
+                if ~isempty(rightData)
+                    findCounts(node.right, bost, rightData);
+                end                
             end
         end
 
+        function [left right] = splitPoints(DT, decider, data)
+            [values, ~] = computeFeature(data, decider);
+            toLeft = values < decider.threshold;
+            left = data(toLeft);
+            right = data(~toLeft);
+        end
         % % pre-order traversal
         % function str = printNode(node)
         %     node.id

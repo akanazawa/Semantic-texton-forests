@@ -12,6 +12,7 @@ path.trainingNames = fullfile(DIR.dataset, 'train.txt');
 path.testingNames = fullfile(DIR.dataset, 'test.txt');
 path.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
 path.trainingPatches = fullfile(DIR.result, 'trainingPatches.mat');
+path.trainingPatchesTransformed = fullfile(DIR.result, 'trainingPatchesTransformed.mat');
 path.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
 % algorithm parameters
 sampleFreq = 4; % space between sampled patches
@@ -22,6 +23,14 @@ numThreshold = 5;
 maxDepth = 10;
 numTree = 5;
 factory = {'addTwo', 'subAbs', 'sub', 'unary'};
+numTransform = 1; % how many transformations to do on single image
+transform.maxAngle = pi/32;
+transform.maxScale = 1.2;
+transform.maxAnisotropicScale = 1.1;
+transform.maxBlur = 1.2;
+transform.maxNoise = .05;
+transform.maxAlpha = 1.4;
+transform.maxBeta = .1;
 
 LABELS = [... 
 %    [0, 0, 0],         %  0. void
