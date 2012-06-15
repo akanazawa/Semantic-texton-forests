@@ -1,4 +1,7 @@
 classdef DecisionTree < handle
+    properties(Constant = true)
+        DIRICHLET = 1e-4;
+    end
     properties(SetAccess = 'private') % fields with default vals
         maxDepth = 10;
         numFeature = 400;
@@ -7,13 +10,11 @@ classdef DecisionTree < handle
         labelWeights;
         root;
         numNodes = 1;
+        numClass = 0;
     end
     
     methods(Static)
-        function DT = load(fname)
-            load(fname);
-            DT = DecisionTree();
-        end
+
     end
     %%%%%%%%%% Public Methods %%%%%%%%%%
     methods        
@@ -25,6 +26,7 @@ classdef DecisionTree < handle
                 DT.numThreshold = numThreshold;
                 DT.factory = factory;
                 DT.labelWeights = labelWeights;
+                DT.numClass = length(labelWeights);
             end
         end
         
@@ -35,18 +37,26 @@ classdef DecisionTree < handle
         end
         
         % fill the tree with all of training data
-        function fillAll(data)
+        function fillAll(DT, data)
             DT.fill(DT.root, data);
         end              
         
-        function dist = classify(point)
-            dist = findLeaf(root, point);
+        function dist = classify(DT, point)
+            leaf = DT.findLeaf(DT.root, point);
+            dist = leaf.distribution;
         end
         
-        function bost = computeBost(data)
+        function bost = computeBost(DT, data)
             bost = sparse(numNodes, 1);
-            bost = findCounts(root, bost, data);
+            bost = DT.findCounts(DT.root, bost, data);
         end
+        
+        function count = factoryFrequency(DT)
+            count = zeros(length(DT.factory), 1);
+            count = DT.countSplitMethod(DT.root, count);
+        end
+        % % pre-order traversal
+
         % function save(DT, fname)
         %     DT = printNode(root)
         % end
@@ -57,10 +67,10 @@ classdef DecisionTree < handle
     methods(Access=private)
         %%%%%%%%%% for learning a tree %%%%%%%%%%
         function node = computeDepthFirst(DT, node, data, depth)
-            if isempty(data), return, end
+            if isempty(data), node=[];, end
             if depth == DT.maxDepth || numel(unique([data.label]))==0
                 %classDist = hist(double([data.label]), numel(DT.labelWeights))';
-                classDist = []; % will fill this out later
+                classDist = zeros(DT.numClass, 1); % will fill this out later
                 %node = TreeNode(classDist.*DT.labelWeights);
                 node = TreeNode(classDist);
                 node.id = DT.numNodes;
@@ -78,6 +88,7 @@ classdef DecisionTree < handle
                 method = mod(i, numFactory)+1;
                 [values, decider] = computeFeature(data, method);
                 [score, threshold] = DT.computeBestThreshold(values, data);
+                if mod(i, 100) == 0, fprintf('..'); end
                 if score > bestScore
                     bestScore = score;
                     bestDecider = decider;
@@ -104,16 +115,15 @@ classdef DecisionTree < handle
             N = numel(values);
             infogains = ones(DT.numThreshold, 1)*-Inf;
             labels = double([data.label]);
-            dirichlet = 1e-4;
-            numClass = length(DT.labelWeights);
+
             for i = 1:DT.numThreshold
                 toLeft = values < thresholds(i);
-                numL = numel(labels(toLeft)) + dirichlet;
-                numR = numel(labels(~toLeft)) + dirichlet;
-                LDist = 1/numL.*(hist(labels(toLeft), numClass) ...
-                                 + dirichlet);
-                RDist = 1/numR.*(hist(labels(~toLeft), numClass) ...
-                                 + dirichlet);
+                numL = numel(labels(toLeft)) + DT.DIRICHLET;
+                numR = numel(labels(~toLeft)) + DT.DIRICHLET;
+                LDist = 1/numL.*(hist(labels(toLeft), DT.numClass) ...
+                                 + DT.DIRICHLET./DT.numClass);
+                RDist = 1/numR.*(hist(labels(~toLeft), DT.numClass) ...
+                                 + DT.DIRICHLET./DT.numClass);
                 % calc entropy
                 EL = -sum(LDist.*log2(LDist));
                 ER = -sum(RDist.*log2(RDist));
@@ -133,19 +143,22 @@ classdef DecisionTree < handle
         end
 
         %%fill the tree with data to build distributions at each leaf
-        function fill(node, data)
-            node.distributions = hist(double([data.label]), numel(DT.labelWeights))'.*...
-                                 DT.labelWeights;
+        function fill(DT, node, data)
+            dist = hist(double([data.label]), DT.numClass)'.*...
+                                 DT.labelWeights; 
+            % normalize to one with dirichlet prior to avoid 0 probabilities
+            node.distribution = (dist + (DT.DIRICHLET./DT.numClass))./(sum(dist) + DT.DIRICHLET);
             if ~node.isLeaf
                 [values, ~] = computeFeature(data, node.decider);
                 toLeft = values < node.decider.threshold;
                 leftData = data(toLeft);
-                rightData = data(toRight);
-                if ~isempty(leftData), fill(node.left, leftData),end
-                if ~isempty(rightData), fill(node.right, rightData),end
+                rightData = data(~toLeft);
+                if ~isempty(leftData), DT.fill(node.left, leftData),end
+                if ~isempty(rightData), DT.fill(node.right, rightData),end
             end
+            if mod(node.id, 500) == 0, fprintf('.'); end
         end            
-        function node = findLeaf(node, point)
+        function node = findLeaf(DT, node, point)
             if node.isLeaf, return , end
             [value, ~] = computeFeature(point, decider);
             if value < node.decider.threshold % left
@@ -155,7 +168,7 @@ classdef DecisionTree < handle
             end
         end
         
-        function bost = findCounts(node, bost, data)
+        function bost = findCounts(DT, node, bost, data)
            % update the count by the total number of data that
            % fellin there
             bost(node.id) = numel(data);
@@ -163,12 +176,12 @@ classdef DecisionTree < handle
                 [values, ~] = computeFeature(data, node.decider);
                 toLeft = values < node.decider.threshold;
                 leftData = data(toLeft);
-                rightData = data(toRight);
+                rightData = data(~toLeft);
                 if ~isempty(leftData)
-                    findCounts(node.left, bost, leftData);
-                end;
+                    bost = DT.findCounts(node.left, bost, leftData);
+                end
                 if ~isempty(rightData)
-                    findCounts(node.right, bost, rightData);
+                    bost = bost + DT.findCounts(node.right, bost, rightData);
                 end                
             end
         end
@@ -179,11 +192,26 @@ classdef DecisionTree < handle
             left = data(toLeft);
             right = data(~toLeft);
         end
-        % % pre-order traversal
-        % function str = printNode(node)
-        %     node.id
-        % end        
-    end
+        function count = countSplitMethod(DT, node, count)
+            if node.isLeaf, return; end
+            if (~node.left.isLeaf & isempty(node.left.decider)) | ...
+                    (~node.right.isLeaf & isempty(node.right.decider))
+                keyboard
+            end
+            switch node.decider.method
+              case 'addTwo'
+                count(1) = count(1) + 1;              
+              case 'subAbs'
+                count(2) = count(2) + 1;
+              case 'sub'
+                count(3) = count(3) + 1;
+              case 'unary'
+                count(4) = count(4) + 1;
+            end
+            count = DT.countSplitMethod(node.left, count);
+            count = count + DT.countSplitMethod(node.right, count);
+        end        
+    end    
     %%%%%%%%%% end of Private methods %%%%%%%%%%        
 end
 

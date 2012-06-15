@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%
 % CONFIGURATION file for STF
 %%%%%%%%%%%%%%%%%%%%
-
+addpath('util');
 % directory settings
 DIR.dataset ='/Users/kanazawa/Documents/projects/datasets/MSRC21/';
 DIR.images = fullfile(DIR.dataset, 'Images');
@@ -11,14 +11,17 @@ DIR.result = 'results/';
 path.trainingNames = fullfile(DIR.dataset, 'train.txt');
 path.testingNames = fullfile(DIR.dataset, 'test.txt');
 path.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
-path.trainingPatches = fullfile(DIR.result, 'trainingPatches.mat');
+path.trainingPatchesSub = fullfile(DIR.result, 'trainingPatchesSubsampled.mat');
+path.trainingPatchesAll = fullfile(DIR.result, 'trainingPatches.mat');
 path.trainingPatchesTransformed = fullfile(DIR.result, 'trainingPatchesTransformed.mat');
 path.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
+path.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
+path.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
 % algorithm parameters
 sampleFreq = 4; % space between sampled patches
 boxSize = 15; % patch size = boxSize x boxSize
 dataPerTree = .25; % frequency to sample
-numFeature = 4;
+numFeature = 100;
 numThreshold = 5;
 maxDepth = 10;
 numTree = 5;

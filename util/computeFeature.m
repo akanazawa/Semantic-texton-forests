@@ -11,19 +11,19 @@ else
     feat = param;
 end
 val = zeros(numel(data), 1);
+% patches = cell(numel(data), 1);
+% [patches(:)] = deal(data.patch);%?
 for i = 1:numel(data)
+    A = data(i).patch(feat.rows(1), feat.cols(1), feat.channels(1));
+    B = data(i).patch(feat.rows(2), feat.cols(2), feat.channels(2));
     switch feat.method
-      case 1% 'addTwo'
-        val(i) = data(i).patch(feat.rows(1), feat.cols(1), feat.channels(1)) + ...
-                 data(i).patch(feat.rows(2), feat.cols(2), ...
-                               feat.channels(2));
+      case 1% 'unary'
+        val(i) = A;
       case 2% 'subAbs'
-        val(i) = abs(data(i).patch(feat.rows(1), feat.cols(1), feat.channels(1)) - ...
-             data(i).patch(feat.rows(2), feat.cols(2), feat.channels(2)));        
-      case 3%'sub'
-        val(i) = data(i).patch(feat.rows(1), feat.cols(1), feat.channels(1)) - ...
-             data(i).patch(feat.rows(2), feat.cols(2), feat.channels(2));        
-      case 4%'unary'
-        val(i) = data(i).patch(feat.rows(1), feat.cols(1), feat.channels(1));        
+        val(i) = abs(A - B);        
+      case 3% 'addTwo'
+        val(i) = A + B;
+      case 4%'sub'
+        val(i) = A - B;
     end
 end

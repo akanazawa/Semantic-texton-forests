@@ -25,7 +25,6 @@ for i = 1:numTrain
     weights = weights + hist(found, 1:numClass)';
     wait = waitbar(i/numTrain, wait, sprintf(['computing labels ' ...
                         'image: %d'], i));
-
 end
 close(wait);
 weights = sum(weights)./weights;
