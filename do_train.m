@@ -10,38 +10,42 @@ function do_train(config_file)
 DEBUG = 0;
 eval(config_file); % load settings
 
-% make training patches
-if ~exist(path.trainingSplit, 'file')
-    splits = sampleTrainingImages(config_file);
-else
-    load(path.trainingSplit); % splits
-end
-% make label weights
-if ~exist(path.labelWeights, 'file')
-    weights = computeLabelWeights(config_file);
-else, load(path.labelWeights); end;
-fprintf('building the random forest\n');
 
 %% learn the splits
-forest(1, numTree) = DecisionTree();
-wait = waitbar(0, 'learning the splits');
-for i = 1:numTree
-    tree = DecisionTree(maxDepth, numFeature, numThreshold, ...
-                        factory, weights);
-    tree.trainDepthFirst(splits{i});
-    forest(i) = tree;
-    wait = waitbar(i/numTree, wait, sprintf(['finished learning ' ...
-                        'tree: %d'], i));
+if ~exist(path.forestSkeleton, 'file')
+    % make training patches
+    if ~exist(path.trainingSplit, 'file')
+        splits = sampleTrainingImages(config_file);
+    else, load(path.trainingSplit); end
+    % make label weights
+    if ~exist(path.labelWeights, 'file')
+        weights = computeLabelWeights(config_file);
+    else, load(path.labelWeights); end
+    
+    fprintf('building the random forest\n');
+    forest(1, numTree) = DecisionTree();
+    wait = waitbar(0, 'learning the splits');
+    for i = 1:numTree
+        tree = DecisionTree(maxDepth, numFeature, numThreshold, ...
+                            factory, weights);
+        tree.trainDepthFirst(splits{i});
+        forest(i) = tree;
+        wait = waitbar(i/numTree, wait, sprintf(['finished learning ' ...
+                            'tree: %d'], i));
+    end
+    close(wait);
+    clear splits;
+    save(path.forestSkeleton, 'forest');
+else
+    load(path.forestSkeleton);
 end
-close(wait);
-clear splits;
-save(path.forestSkeleton, 'forest');
 
+%% Fill the forsest
 if ~exist(path.trainingPatchesAll, 'file')
     [data, dataT] = sampleTrainingImagesAll(config_file);
 else
     load(path.trainingPatchesAll); % load data
-    load(path.trainingPatchesTransformed); % load dataT
+                                   %    load(path.trainingPatchesTransformed); % load dataT
 end
                                        
 % sanity check.. luv2rgb takes a while
