@@ -66,12 +66,9 @@ I2 = bsxfun(@times, Idb, reshape(ones(3,1)*alpha, [1 1 3]));
 I2 = bsxfun(@plus, I2, reshape(ones(3,1)*beta, [1 1 3]));
 I2 = im2uint8(I2);
 if DEBUG, subplot(3,3,6); imagesc(I2); title('after color affine');end;
-% turn it to lab
-cform = makecform('srgb2lab');
-I2 = applycform(I2, cform);    
-if DEBUG, subplot(3,3,7); imagesc(I2); title('after lab');end;
-if DEBUG, subplot(3,3,8); imagesc(I); title('original'); end;
-if DEBUG, subplot(3,3,9); imagesc(L2); title('final label'); end;
+% if DEBUG, subplot(3,3,7); imagesc(I2); title('after lab');end;
+% if DEBUG, subplot(3,3,8); imagesc(I); title('original'); end;
+% if DEBUG, subplot(3,3,9); imagesc(L2); title('final label'); end;
 assert(all(size(I2) == size(L2)))
 
 

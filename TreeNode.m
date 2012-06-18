@@ -14,10 +14,12 @@ classdef TreeNode < handle
     end
     
     methods
-        function node = TreeNode(distribution)
+        function node = TreeNode(distribution, id, level)
             if nargin > 0
                 node.distribution = distribution;
                 node.isLeaf = true;
+                node.id = id;
+                node.level = level;
             end
         end
     end    

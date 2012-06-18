@@ -8,32 +8,35 @@ DIR.images = fullfile(DIR.dataset, 'Images');
 DIR.groundTruth = fullfile(DIR.dataset, 'GroundTruth');
 DIR.result = 'results/';
 
-path.trainingNames = fullfile(DIR.dataset, 'train.txt');
-path.testingNames = fullfile(DIR.dataset, 'test.txt');
-path.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
-path.trainingPatchesSub = fullfile(DIR.result, 'trainingPatchesSubsampled.mat');
-path.trainingPatchesAll = fullfile(DIR.result, 'trainingPatchesAll.mat');
-path.trainingPatchesTransformed = fullfile(DIR.result, 'trainingPatchesTransformed.mat');
-path.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
-path.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
-path.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
-% algorithm parameters
-sampleFreq = 4; % space between sampled patches
-boxSize = 15; % patch size = boxSize x boxSize
-dataPerTree = .25; % frequency to sample
-numFeature = 100;
-numThreshold = 5;
-maxDepth = 10;
-numTree = 5;
-factory = {'addTwo', 'subAbs', 'sub', 'unary'};
-numTransform = 1; % how many transformations to do on single image
-transform.maxAngle = pi/32;
-transform.maxScale = 1.2;
-transform.maxAnisotropicScale = 1.1;
-transform.maxBlur = 1.2;
-transform.maxNoise = .05;
-transform.maxAlpha = 1.4;
-transform.maxBeta = .1;
+PATH.trainingNames = fullfile(DIR.dataset, 'train.txt');
+PATH.testingNames = fullfile(DIR.dataset, 'test.txt');
+PATH.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
+PATH.trainingPatchesSub = fullfile(DIR.result, 'trainingPatchesSubsampled.mat');
+PATH.trainingPatchesAll = fullfile(DIR.result, 'trainingPatchesAll.mat');
+PATH.trainingPatchesTransformed = fullfile(DIR.result, 'trainingPatchesTransformed.mat');
+PATH.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
+PATH.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
+PATH.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
+% patch sampling parameters
+BOX.sampleFreq = 4; % space between sampled patches
+BOX.size = 15; % patch size = boxSize x boxSize
+BOX.cform = makecform('srgb2lab');
+% Forest paramters
+FOREST.dataPerTree = .25; % frequency to sample
+FOREST.numFeature = 100;
+FOREST.numThreshold = 5;
+FOREST.maxDepth = 10;
+FOREST.numTree = 5;
+FOREST.factory = {'addTwo', 'subAbs', 'sub', 'unary'};
+% transform parameters
+TRANSFORM.numTransform = 1; % how many transformations to do on single image
+TRANSFORM.maxAngle = pi/32;
+TRANSFORM.maxScale = 1.2;
+TRANSFORM.maxAnisotropicScale = 1.1;
+TRANSFORM.maxBlur = 1.2;
+TRANSFORM.maxNoise = .05;
+TRANSFORM.maxAlpha = 1.4;
+TRANSFORM.maxBeta = .1;
 
 LABELS = [... 
 %    [0, 0, 0],         %  0. void

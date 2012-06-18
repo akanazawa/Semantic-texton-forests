@@ -12,63 +12,59 @@ eval(config_file); % load settings
 
 
 %% learn the splits
-if ~exist(path.forestSkeleton, 'file')
+if ~exist(PATH.forestSkeleton, 'file')
     % make training patches
-    if ~exist(path.trainingSplit, 'file')
+    if ~exist(PATH.trainingSplit, 'file')
         splits = sampleTrainingImages(config_file);
-    else, load(path.trainingSplit); end
+    else, load(PATH.trainingSplit); end
     % make label weights
-    if ~exist(path.labelWeights, 'file')
+    if ~exist(PATH.labelWeights, 'file')
         weights = computeLabelWeights(config_file);
-    else, load(path.labelWeights); end
+    else, load(PATH.labelWeights); end
     
     fprintf('building the random forest\n');
-    forest(1, numTree) = DecisionTree();
+    forest(1, FOREST.numTree) = DecisionTree();
     wait = waitbar(0, 'learning the splits');
-    for i = 1:numTree
-        tree = DecisionTree(maxDepth, numFeature, numThreshold, ...
-                            factory, weights);
+    for i = 1:FOREST.numTree
+        tree = DecisionTree(FOREST.maxDepth, FOREST.numFeature, FOREST.numThreshold, ...
+                            FOREST.factory, weights);
         tree.trainDepthFirst(splits{i});
         forest(i) = tree;
-        wait = waitbar(i/numTree, wait, sprintf(['finished learning ' ...
+        wait = waitbar(i/FOREST.numTree, wait, sprintf(['finished learning ' ...
                             'tree: %d'], i));
     end
     close(wait);
     clear splits;
-    save(path.forestSkeleton, 'forest');
+    save(PATH.forestSkeleton, 'forest');
 else
-    load(path.forestSkeleton);
+    load(PATH.forestSkeleton);
 end
 
-%% Fill the forsest
-if ~exist(path.trainingPatchesAll, 'file')
-    [data, dataT] = sampleTrainingImagesAll(config_file);
-else
-    load(path.trainingPatchesAll); % load data
-                                   %    load(path.trainingPatchesTransformed); % load dataT
-end
-                                       
-% sanity check.. luv2rgb takes a while
-if DEBUG
-    %    patches = cell(numel(data), 1);
-    %    [patches{:}] = deal(data.patch);
-    cform = makecform('lab2srgb');
-    start = randi(numel(data)-500);
-    range = start:start+500;
-    debug = uint8(zeros(boxSize, boxSize, 3, numel(range)));
-    debugT = uint8(zeros(boxSize, boxSize, 3, numel(range)));
-    for i = 1:numel(range)
-        debug(:, :, :, i) = data(range(i)).patch;%applycform(data(range(i)).patch, cform);
-        debugT(:, :, :, i) = dataT(range(i)).patch;%applycform(dataT(range(i)).patch, cform);
-    end
-    sfigure; montage(debug); 
-    sfigure; montage(debugT);
-end
 %% fill the forest
-for i = 1:numTree
-    forest(i).fillAll([data, dataT]);
+
+fid = fopen(PATH.trainingNames, 'r');
+imageNames = textscan(fid, '%s');
+imageNames = imageNames{1};
+fclose(fid);
+numTrain = numel(imageNames);
+
+wait = waitbar(0, 'filling the tree');
+for i = 1:numTrain
+    data = getPatches(imageNames{i}, DIR, CLASSES, BOX, TRANSFORM);
+    for t = 1:FOREST.numTree
+        forest(t).fillAll(data);
+        fprintf('.');
+    end    
+    wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
+                        'image: %d'], i));    
 end
+save(PATH.forestFilled, 'forest');
+keyboard
+%%normalize tree
+for t = 1:FOREST.numTree
+    forest(t).normalizeAll();
+end    
+save(PATH.forestFilled, 'forest');
+close(wait);
 
-save(path.forestFilled, 'forest');
-
-
+    

@@ -6,12 +6,11 @@ function weights = computeLabelWeights(config_file)
 
 eval(config_file);
 
-fid = fopen(path.trainingNames, 'r');
+fid = fopen(PATH.trainingNames, 'r');
 imageNames = textscan(fid, '%s');
 labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames{1}, '\.bmp$', '_GT.bmp'));
 numTrain = numel(labelNames);
 fclose(fid);
-numClass = single(CLASSES.Count);
 
 weights = zeros(numClass, 1);
 wait = waitbar(0, 'preprocessing data');
@@ -29,4 +28,4 @@ end
 close(wait);
 weights = sum(weights)./weights;
 
-save(path.labelWeights, 'weights');
+save(PATH.labelWeights, 'weights');

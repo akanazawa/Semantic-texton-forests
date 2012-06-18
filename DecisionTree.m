@@ -41,6 +41,11 @@ classdef DecisionTree < handle
             DT.fill(DT.root, data);
         end              
         
+        function normalizeAll(DT)
+            DT.normalize(DT.root);
+        end              
+
+        
         function dist = classify(DT, point)
             leaf = DT.findLeaf(DT.root, point);
             dist = leaf.distribution;
@@ -69,13 +74,9 @@ classdef DecisionTree < handle
         function node = computeDepthFirst(DT, node, data, depth)
             if isempty(data), node=[];, end
             if depth == DT.maxDepth || numel(unique([data.label]))==0
-                %classDist = hist(double([data.label]), numel(DT.labelWeights))';
                 classDist = zeros(DT.numClass, 1); % will fill this out later
-                %node = TreeNode(classDist.*DT.labelWeights);
-                node = TreeNode(classDist);
-                node.id = DT.numNodes;
+                node = TreeNode(classDist, DT.numNodes, depth);
                 DT.numNodes = DT.numNodes + 1;
-                node.level = depth;
                 return;
             end
             % if not leaf, find the best split
@@ -101,6 +102,7 @@ classdef DecisionTree < handle
             leftData = data(toLeft);
             rightData = data(~toLeft);
             % housekeeping
+            node.distribution = zeros(DT.numClass,1);
             node.id = DT.numNodes;
             node.level = depth;
             DT.numNodes = DT.numNodes + 1;
@@ -144,10 +146,8 @@ classdef DecisionTree < handle
 
         %%fill the tree with data to build distributions at each leaf
         function fill(DT, node, data)
-            dist = hist(double([data.label]), DT.numClass)'.*...
-                                 DT.labelWeights; 
-            % normalize to one with dirichlet prior to avoid 0 probabilities
-            node.distribution = (dist + (DT.DIRICHLET./DT.numClass))./(sum(dist) + DT.DIRICHLET);
+            dist = node.distribution + ...
+                   hist(double([data.label]), DT.numClass)'.*DT.labelWeights; 
             if ~node.isLeaf
                 [values, ~] = computeFeature(data, node.decider);
                 toLeft = values < node.decider.threshold;
@@ -156,8 +156,18 @@ classdef DecisionTree < handle
                 if ~isempty(leftData), DT.fill(node.left, leftData),end
                 if ~isempty(rightData), DT.fill(node.right, rightData),end
             end
-            if mod(node.id, 500) == 0, fprintf('.'); end
-        end            
+        end
+        
+        function normalize(DT, node)
+        % normalize to one with dirichlet prior
+            node.distribution = (node.distribution + (DT.DIRICHLET./DT.numClass))./...
+                                (sum(node.distribution) + DT.DIRICHLET);
+            if ~node.isLeaf
+                DT.normalize(node.left);
+                DT.normalize(node.right);
+            end
+        end
+        
         function node = findLeaf(DT, node, point)
             if node.isLeaf, return , end
             [value, ~] = computeFeature(point, decider);
