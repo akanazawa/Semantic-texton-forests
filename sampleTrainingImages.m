@@ -49,7 +49,7 @@ if ~exist(PATH.trainingPatchesSub, 'file')
 end
 
 %% make splits
-if ~exist(data, 'var'), load(PATH.trainingPatchesSub); end
+if ~exist('data', 'var'), load(PATH.trainingPatchesSub); end
 splits = cell(FOREST.numTree, 1);
 for i = 1:numTree
     splits{i} = data(rand(numel(data), 1) < FOREST.dataPerTree);    
