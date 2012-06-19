@@ -28,9 +28,15 @@ if ~exist(PATH.trainingPatchesSub, 'file')
         indices = indices(rad+1:BOX.sampleFreq:r-rad, rad+1:BOX.sampleFreq:c-rad);
         [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
         for j = 1:numel(indices)
-            rgb = strtrim(sprintf('%d%d%d', L(ri(j), ci(j), :)));
-            if isKey(CLASSES, rgb) 
-                data(k).label = CLASSES(rgb);
+            % rgb = strtrim(sprintf('%d%d%d', L(ri(j), ci(j), :)));
+            gt = find(L(ri(j), ci(j), 1) == LABELS(:, 1) & ...
+                      L(ri(j), ci(j), 2) == LABELS(:, 2) & ...
+                      L(ri(j), ci(j), 3) == LABELS(:, 3) );            
+            if ~isempty(gt)
+                data(k).label = gt;                            
+            % if isKey(CLASSES, rgb) 
+            %     data(k).label = CLASSES(rgb);
+            %assert(gt == CLASSES(rgb));
                 data(k).patch = Ilab(ri(j)-rad:ri(j)+rad, ci(j)-rad:ci(j)+rad, :);
                 k = k + 1;
             end        

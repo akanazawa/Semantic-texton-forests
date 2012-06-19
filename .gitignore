@@ -3,6 +3,7 @@
 ### Project Specific ###
 *.tex
 *.mat
+results/*.bmp
 
 
 ### Generic Stuff ###

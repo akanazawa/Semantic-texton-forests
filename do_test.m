@@ -8,7 +8,7 @@ function do_test(config_file)
 %
 % May 30 '12 Angjoo Kanzawa
 %%%%%%%%%%%%%%%%%%%%
-DEBUG = 0;
+DISPLAY = 1;
 eval(config_file); % load settings
 
 %% load the forest
@@ -22,14 +22,28 @@ numTest = numel(imageNames);
 wait = waitbar(0, 'testing');
 
 for i = 1:numTest
-    data = getPatches(imageNames{i}, DIR, CLASSES, BOX, TRANSFORM, 1);
-    dist = zeros(numClass, 1);
-    for t = 1:FOREST.numTree
-        dist = dist + forest(t).classify(data(i));
+    [data] = getPatches(imageNames{i}, DIR, [], BOX, []);
+    pred = zeros(numel(data), 1);
+    for j = 1:numel(data)        
+        dist = zeros(numClass, 1);
+        for t = 1:FOREST.numTree
+            dist = dist + forest(t).classify(data(j));
+        end
+        dist = dist./FOREST.numTree;
+        % normalize
+        dist = (dist + 1e-4./numClass)./(sum(dist) + 1e-4);
+        pred(j) = max(dist);
     end
-    dist = dist./FOREST.numTree;
-    % normalize
-    dist = (dist + 1e-4./numClass)./(sum(dist) + 1e-4);
+    I = imread(imageNames{i});
+    [r, c, ~] = size(I);
+    pred = reshape(pred, r, c);
+    predRGB = label2rgb(pred, LABELS);
+    if DISPLAY
+        figure(1), imshow(I), hold on;
+        himage = imshow(predRGB);
+        set(himage, 'AlphaData', 0.3);
+    end
+    %    imwrite(fullfile(DIR.result, imageNames{i}), 'bmp');
     wait = waitbar(i/numTest, wait, sprintf(['done evaluating test ' ...
                         'image %d'], i));
 end                                   

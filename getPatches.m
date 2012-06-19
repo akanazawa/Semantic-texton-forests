@@ -1,7 +1,7 @@
-function [data, dataT] = getPatches(fname, DIR, CLASSES, BOX, TRANSFORM)
+function [data] = getPatches(fname, DIR, LABELS, BOX, TRANSFORM)
 % No subsampling, collect patches from all pixels. Edge cases are
 % treated by replication
-if ~empty(TRANSFORM)
+if ~isempty(TRANSFORM)
     DEBUG = 0;
     k = 1;
     data = struct([]);
@@ -17,13 +17,17 @@ if ~empty(TRANSFORM)
     %% collect patches without transformation
     for j = 1:numel(indices)
         % need -rad because L wasn't padded
-        rgb = strtrim(sprintf('%d%d%d', L(ri(j)-rad, ci(j)-rad, :)));
-        if isKey(CLASSES, rgb) 
-            data(k).label = CLASSES(rgb);
+        gt = find(L(ri(j)-rad, ci(j)-rad, 1) == LABELS(:, 1) & ...
+                      L(ri(j)-rad, ci(j)-rad, 2) == LABELS(:, 2) & ...
+                      L(ri(j)-rad, ci(j)-rad, 3) == LABELS(:, 3) );            
+        if ~isempty(gt)
+            data(k).label = gt;
             data(k).patch = Ilab(ri(j)-rad:ri(j)+rad, ci(j)-rad:ci(j)+rad, :);
             k = k + 1;
         end        
     end
+    % if no appropriate label is found no need to do transformation
+    if isempty(data), return; end 
     %% collect patches after transformation
     for t = 1:TRANSFORM.numTransform    
         [I2, L2] = transformImage(I, L, TRANSFORM);
@@ -35,9 +39,11 @@ if ~empty(TRANSFORM)
         indices = indices(rad+1:r-rad, rad+1:c-rad);
         [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
         for j=1:numel(indices)           
-            rgb = strtrim(sprintf('%d%d%d', L2(ri(j)-rad, ci(j)-rad, :)));
-            if isKey(CLASSES, rgb) 
-                data(k).label = CLASSES(rgb);
+            gt = find(L2(ri(j)-rad, ci(j)-rad, 1) == LABELS(:, 1) & ...
+                      L2(ri(j)-rad, ci(j)-rad, 2) == LABELS(:, 2) & ...
+                      L2(ri(j)-rad, ci(j)-rad, 3) == LABELS(:, 3) );            
+            if ~isempty(gt)
+                data(k).label = gt;
                 data(k).patch = Ilab2(ri(j)-rad:ri(j)+rad, ...
                                       ci(j)-rad:ci(j)+rad, :);
                 k = k + 1;
@@ -57,7 +63,7 @@ if ~empty(TRANSFORM)
         end
         sfigure; montage(debug); 
     end
-else % get patches for testing
+else %% get patches for testing
     rad = (BOX.size-1)/2; % of patch
     I = imread(fullfile(DIR.images, fname));
     Ipad = padarray(I, [rad, rad], 'symmetric');
@@ -73,5 +79,6 @@ else % get patches for testing
         data(k).patch = Ilab(ri(j)-rad:ri(j)+rad, ci(j)-rad:ci(j)+rad, :);
         k = k + 1;
     end        
-    assert(k== size(I, 1)*size(I,2));
+    assert((k-1)== row*col);
 end
+
