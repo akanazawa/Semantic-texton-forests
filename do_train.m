@@ -50,7 +50,7 @@ numTrain = numel(imageNames);
 
 wait = waitbar(0, 'filling the tree');
 for i = 1:numTrain
-    data = getPatches(imageNames{i}, DIR, CLASSES, BOX, TRANSFORM);
+    data = getPatches(imageNames{i}, DIR, CLASSES, BOX, TRANSFORM, 0);
     for t = 1:FOREST.numTree
         forest(t).fillAll(data);
         fprintf('.');

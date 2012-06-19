@@ -11,35 +11,25 @@ function do_test(config_file)
 DEBUG = 0;
 eval(config_file); % load settings
 
-%% preprocess test images
-if ~exist(path.testPatches, 'file')
-    data = sampleTestPatches(config_file);
-else
-    load(path.testPatches); % load data
-end
-% sanity check.. luv2rgb takes a while
-if DEBUG
-    %    patches = cell(numel(data), 1);
-    %    [patches{:}] = deal(data.patch);
-    cform = makecform('lab2srgb');
-    start = randi(numel(data)-500);
-    range = start:start+500;
-    debug = uint8(zeros(boxSize, boxSize, 3, numel(range)));
-    for i = 1:numel(range)
-        debug(:, :, :, i) = data(range(i)).patch;%applycform(data(range(i)).patch, cform);
-    end
-    sfigure; montage(debug); 
-end
-
 %% load the forest
-load(path.forestFilled);
+load(PATH.forestFilled);
 
-numTest = numel(data);
+fid = fopen(PATH.testNames, 'r');
+imageNames = textscan(fid, '%s');
+imageNames = imageNames{1};
+fclose(fid);
+numTest = numel(imageNames);
 wait = waitbar(0, 'testing');
+
 for i = 1:numTest
-    for t = 1:numTree
-        dist = forest(t).classify(data(i));
+    data = getPatches(imageNames{i}, DIR, CLASSES, BOX, TRANSFORM, 1);
+    dist = zeros(numClass, 1);
+    for t = 1:FOREST.numTree
+        dist = dist + forest(t).classify(data(i));
     end
+    dist = dist./FOREST.numTree;
+    % normalize
+    dist = (dist + 1e-4./numClass)./(sum(dist) + 1e-4);
     wait = waitbar(i/numTest, wait, sprintf(['done evaluating test ' ...
                         'image %d'], i));
 end                                   

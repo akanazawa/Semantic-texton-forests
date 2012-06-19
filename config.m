@@ -9,11 +9,9 @@ DIR.groundTruth = fullfile(DIR.dataset, 'GroundTruth');
 DIR.result = 'results/';
 
 PATH.trainingNames = fullfile(DIR.dataset, 'train.txt');
-PATH.testingNames = fullfile(DIR.dataset, 'test.txt');
+PATH.testNames = fullfile(DIR.dataset, 'test.txt');
 PATH.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
 PATH.trainingPatchesSub = fullfile(DIR.result, 'trainingPatchesSubsampled.mat');
-PATH.trainingPatchesAll = fullfile(DIR.result, 'trainingPatchesAll.mat');
-PATH.trainingPatchesTransformed = fullfile(DIR.result, 'trainingPatchesTransformed.mat');
 PATH.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
 PATH.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
 PATH.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
