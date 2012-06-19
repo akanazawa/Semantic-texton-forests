@@ -51,7 +51,7 @@ end
 %% make splits
 if ~exist('data', 'var'), load(PATH.trainingPatchesSub); end
 splits = cell(FOREST.numTree, 1);
-for i = 1:numTree
+for i = 1:FOREST.numTree
     splits{i} = data(rand(numel(data), 1) < FOREST.dataPerTree);    
 end
 save(PATH.trainingSplit, 'splits');
