@@ -28,7 +28,12 @@ if ~exist(PATH.forestSkeleton, 'file')
     for i = 1:FOREST.numTree
         tree = DecisionTree(FOREST.maxDepth, FOREST.numFeature, FOREST.numThreshold, ...
                             FOREST.factory, weights);
-        tree.trainDepthFirst(splits{i});
+        patches = [splits{i}.patch];
+        % make it d by d by N by 3
+        patches = reshape(patches, size(patches, 1), ...
+                          size(patches, 1), numel(data), 3);
+        labels = double([splits{i}.label]);
+        tree.trainDepthFirst(patches, labels);
         forest(i) = tree;
         wait = waitbar(i/FOREST.numTree, wait, sprintf(['finished learning ' ...
                             'tree: %d'], i));
@@ -51,14 +56,20 @@ numTrain = numel(imageNames);
 wait = waitbar(0, 'filling the tree');
 for i = 1:numTrain
     data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
+    patches = [data.patch];
+    % make it d by d by N by 3
+    patches = reshape(patches, size(patches, 1), ...
+                      size(patches, 1), numel(data), 3);
+    labels = double([data.label]);
     if ~isempty(data)
         for t = 1:FOREST.numTree
-            forest(t).fillAll(data);            
+            forest(t).fillAll(patches, labels);            
         end    
     end
     wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
                         'image: %d'], i));    
 end
+close(wait);
 save(PATH.forestFilled, 'forest');
 keyboard
 %%normalize tree

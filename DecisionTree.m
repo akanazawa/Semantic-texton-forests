@@ -30,15 +30,15 @@ classdef DecisionTree < handle
             end
         end
         
-        function DT = trainDepthFirst(DT, data)
+        function DT = trainDepthFirst(DT, patches, labels)
             % Reset the tree
             DT.numNodes = 1;
-            DT.root = DT.computeDepthFirst(TreeNode(), data, 0);            
+            DT.root = DT.computeDepthFirst(TreeNode(), patches, labels, 0);            
         end
         
         % fill the tree with all of training data
-        function fillAll(DT, data)
-            DT.fill(DT.root, data);
+        function fillAll(DT, patches, labels)
+            DT.fill(DT.root, patches, labels);
         end              
         
         function normalizeAll(DT)
@@ -47,6 +47,7 @@ classdef DecisionTree < handle
 
         
         function dist = classify(DT, point)
+            assert(isnumeric(point));
             leaf = DT.findLeaf(DT.root, point);
             dist = leaf.distribution;
         end
@@ -71,9 +72,9 @@ classdef DecisionTree < handle
     %%%%%%%%%% Private methods %%%%%%%%%%
     methods(Access=private)
         %%%%%%%%%% for learning a tree %%%%%%%%%%
-        function node = computeDepthFirst(DT, node, data, depth)
+        function node = computeDepthFirst(DT, node, patches, labels, depth)
             if isempty(data), node=[];, end
-            if depth == DT.maxDepth || numel(unique([data.label]))==0
+            if depth == DT.maxDepth || numel(unique(labels))==0
                 classDist = zeros(DT.numClass, 1); % will fill this out later
                 node = TreeNode(classDist, DT.numNodes, depth);
                 DT.numNodes = DT.numNodes + 1;
@@ -85,46 +86,45 @@ classdef DecisionTree < handle
             fprintf('computing the best feature split for node %d\n', ...
                     DT.numNodes);
             for i = 1:DT.numFeature
-                %                method = DT.factory{mod(i, numFactory)+1};
-                method = mod(i, numFactory)+1;
-                [values, decider] = computeFeature(data, method);
-                [score, threshold] = DT.computeBestThreshold(values, data);
-                if mod(i, 100) == 0, fprintf('..'); end
+                method = mod(i, numFactory)+1; %DT.factory{mod(i, numFactory)+1};
+                [values, decider] = computeFeature(patches, method);
+                [score, threshold] = DT.computeBestThreshold(values, labels);
                 if score > bestScore
                     bestScore = score;
                     bestDecider = decider;
                     bestDecider.threshold = threshold;
                 end            
             end            
-            % do the split
-            [values, ~] = computeFeature(data, bestDecider);
-            toLeft = values < bestDecider.threshold;
-            leftData = data(toLeft);
-            rightData = data(~toLeft);
             % housekeeping
             node.distribution = zeros(DT.numClass,1);
             node.id = DT.numNodes;
             node.level = depth;
             DT.numNodes = DT.numNodes + 1;
             node.decider = bestDecider;
-            node.left = DT.computeDepthFirst(TreeNode(), leftData, depth+1);
-            node.right = DT.computeDepthFirst(TreeNode(), rightData, depth+1);
+            % do the split
+            [values, ~] = computeFeature(patches, bestDecider);
+            toLeft = values < bestDecider.threshold;
+            node.left = DT.computeDepthFirst(TreeNode(), ...
+                                             patches(:, :, toLeft, :), ...
+                                             labels(toLeft), depth+1);
+            node.right = DT.computeDepthFirst(TreeNode(), ...
+                                              patches(:, :, ~toLeft, :), ...
+                                              labels(~toLeft), depth+1);
         end
         
-        function [bestScore, bestThreshold] = computeBestThreshold(DT,values, data)
+        function [bestScore, bestThreshold] = computeBestThreshold(DT,values, labels)
             % candidate threshold sampled from this values gaussian
             thresholds = randn(DT.numThreshold, 1).*std(values) + mean(values);
             N = numel(values);
             infogains = ones(DT.numThreshold, 1)*-Inf;
-            labels = double([data.label]);
 
             for i = 1:DT.numThreshold
                 toLeft = values < thresholds(i);
                 numL = numel(labels(toLeft)) + DT.DIRICHLET;
                 numR = numel(labels(~toLeft)) + DT.DIRICHLET;
-                LDist = 1/numL.*(hist(labels(toLeft), DT.numClass) ...
+                LDist = 1/numL.*(hist(labels(toLeft), 1:DT.numClass) ...
                                  + DT.DIRICHLET./DT.numClass);
-                RDist = 1/numR.*(hist(labels(~toLeft), DT.numClass) ...
+                RDist = 1/numR.*(hist(labels(~toLeft), 1:DT.numClass) ...
                                  + DT.DIRICHLET./DT.numClass);
                 % calc entropy
                 EL = -sum(LDist.*log2(LDist));
@@ -145,16 +145,16 @@ classdef DecisionTree < handle
         end
 
         %%fill the tree with data to build distributions at each leaf
-        function fill(DT, node, data)
-            dist = node.distribution + ...
-                   hist(double([data.label]), DT.numClass)'.*DT.labelWeights; 
+        function fill(DT, node, patches, labels)
+            node.distribution = node.distribution + ...
+                   hist(labels, 1:DT.numClass)'.*DT.labelWeights; 
             if ~node.isLeaf
-                [values, ~] = computeFeature(data, node.decider);
+                [values, ~] = computeFeature(patches, node.decider);
                 toLeft = values < node.decider.threshold;
-                leftData = data(toLeft);
-                rightData = data(~toLeft);
-                if ~isempty(leftData), DT.fill(node.left, leftData),end
-                if ~isempty(rightData), DT.fill(node.right, rightData),end
+                if sum(toLeft)~=0, DT.fill(node.left, patches(:, :, toLeft, :), ...
+                                               labels(toLeft)); end
+                if sum(toLeft)~=length(labels), DT.fill(node.right, patches(:, :, ~toLeft, :), ...
+                                                labels(~toLeft)); end
             end
         end
         
@@ -196,18 +196,8 @@ classdef DecisionTree < handle
             end
         end
 
-        function [left right] = splitPoints(DT, decider, data)
-            [values, ~] = computeFeature(data, decider);
-            toLeft = values < decider.threshold;
-            left = data(toLeft);
-            right = data(~toLeft);
-        end
         function count = countSplitMethod(DT, node, count)
             if node.isLeaf, return; end
-            if (~node.left.isLeaf & isempty(node.left.decider)) | ...
-                    (~node.right.isLeaf & isempty(node.right.decider))
-                keyboard
-            end
             switch node.decider.method
               case 'addTwo'
                 count(1) = count(1) + 1;              
