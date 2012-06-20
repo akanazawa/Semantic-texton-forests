@@ -22,18 +22,24 @@ numTest = numel(imageNames);
 wait = waitbar(0, 'testing');
 
 for i = 1:numTest
-    [data] = getPatches(imageNames{i}, DIR, [], BOX, []);
+    data = getPatches(imageNames{i}, DIR, [], BOX, []);   
+    patches = [data.patch];
+    % make it d by d by N by 3
+    patches = reshape(patches, size(patches, 1), ...
+                      size(patches, 1), numel(data), 3);    
     pred = zeros(numel(data), 1);
-    for j = 1:numel(data)        
-        dist = zeros(numClass, 1);
-        for t = 1:FOREST.numTree
-            dist = dist + forest(t).classify(data(j));
-        end
-        dist = dist./FOREST.numTree;
-        % normalize
-        dist = (dist + 1e-4./numClass)./(sum(dist) + 1e-4);
-        pred(j) = max(dist);
-    end
+    dist = zeros(numClass, 1);
+    dist = forest(1).classify(patches);
+    % for j = 1:numel(data)        
+    %     dist = zeros(numClass, 1);
+    %     for t = 1:FOREST.numTree            
+    %         dist = dist + forest(t).classify(patches(:, :, j, :));
+    %     end
+    %     dist = dist./FOREST.numTree;
+    %     % normalize
+    %     dist = (dist + 1e-4./numClass)./(sum(dist) + 1e-4);
+    %     pred(j) = max(dist);
+    % end
     I = imread(imageNames{i});
     [r, c, ~] = size(I);
     pred = reshape(pred, r, c);

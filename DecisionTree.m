@@ -45,11 +45,11 @@ classdef DecisionTree < handle
             DT.normalize(DT.root);
         end              
 
-        
-        function dist = classify(DT, point)
-            assert(isnumeric(point));
-            leaf = DT.findLeaf(DT.root, point);
-            dist = leaf.distribution;
+% data is boxSize x boxSize x N x 3
+        function dist = classify(DT, data)
+            dist = zeros(size(data, 3), DT.numClass);
+            ids = [1:size(data,3)];
+            dist = DT.findLeafDist(DT.root, data, dist, ids);
         end
         
         function bost = computeBost(DT, data)
@@ -168,13 +168,23 @@ classdef DecisionTree < handle
             end
         end
         
-        function node = findLeaf(DT, node, point)
-            if node.isLeaf, return , end
-            [value, ~] = computeFeature(point, decider);
-            if value < node.decider.threshold % left
-                findLeaf(node.left, point);
-            else 
-                findLeaf(node.right, point);
+        function dist = findLeafDist(DT, node, data, dist, ids)
+            if node.isLeaf
+                dist(ids, :) = node.distribution;
+                return
+            end
+            [values, ~] = computeFeature(data, node.decider);
+            toLeft = values < node.decider.threshold;
+            
+            if sum(toLeft) ~= 0
+                dist = DT.findLeafDist(node.left, ...
+                                           patches(:, :, toLeft, :), ...
+                                           dist(toLeft, :), ids(toLeft));
+            end
+            if sum(toLeft)~=size(patches, 3)
+                dist = DT.findLeafDist(node.right, ...
+                                           patches(:, :, ~toLeft, :), ...
+                                           dist(~toLeft, :), ids(~toLeft));
             end
         end
         

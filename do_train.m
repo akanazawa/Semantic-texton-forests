@@ -46,35 +46,35 @@ else
 end
 
 %% fill the forest
+if ~exist(PATH.forestFilled, 'file');
+    fid = fopen(PATH.trainingNames, 'r');
+    imageNames = textscan(fid, '%s');
+    imageNames = imageNames{1};
+    fclose(fid);
+    numTrain = numel(imageNames);
 
-fid = fopen(PATH.trainingNames, 'r');
-imageNames = textscan(fid, '%s');
-imageNames = imageNames{1};
-fclose(fid);
-numTrain = numel(imageNames);
-
-wait = waitbar(0, 'filling the tree');
-for i = 1:numTrain
-    data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
-    if ~isempty(data)
-        patches = [data.patch];
-        % make it d by d by N by 3
-        patches = reshape(patches, size(patches, 1), ...
-                          size(patches, 1), numel(data), 3);
-        labels = double([data.label]);        
-        for t = 1:FOREST.numTree
-            forest(t).fillAll(patches, labels);            
-        end    
+    wait = waitbar(0, 'filling the tree');
+    for i = 1:numTrain
+        data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
+        if ~isempty(data)
+            patches = [data.patch];
+            % make it d by d by N by 3
+            patches = reshape(patches, size(patches, 1), ...
+                              size(patches, 1), numel(data), 3);
+            labels = double([data.label]);        
+            for t = 1:FOREST.numTree
+                forest(t).fillAll(patches, labels);            
+            end    
+        end
+        wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
+                            'image: %d'], i));    
     end
-    wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
-                        'image: %d'], i));    
+    fprintf('normalize tree\n');
+    for t = 1:FOREST.numTree
+        forest(t).normalizeAll();
+    end    
+    save(PATH.forestFilled, 'forest');
+    close(wait);
 end
-fprintf('normalize tree\n');
-for t = 1:FOREST.numTree
-    forest(t).normalizeAll();
-end    
-save(PATH.forestFilled, 'forest');
-close(wait);
-
 
     

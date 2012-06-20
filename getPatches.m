@@ -79,6 +79,6 @@ else %% get patches for testing
         data(k).patch = Ilab(ri(j)-rad:ri(j)+rad, ci(j)-rad:ci(j)+rad, :);
         k = k + 1;
     end        
-    assert((k-1)== row*col);
+    assert((k-1)== size(I, 1)*size(I, 2));
 end
 
