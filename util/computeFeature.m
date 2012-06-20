@@ -25,4 +25,4 @@ switch feat.method
     val = A - B;
 end
 
-val = double(val);
+val = double(val(:));

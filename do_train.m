@@ -9,8 +9,6 @@ function do_train(config_file)
 %%%%%%%%%%%%%%%%%%%%
 DEBUG = 0;
 eval(config_file); % load settings
-
-
 %% learn the splits
 if ~exist(PATH.forestSkeleton, 'file')
     % make training patches

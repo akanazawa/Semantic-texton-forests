@@ -8,7 +8,7 @@ DIR.images = fullfile(DIR.dataset, 'Images');
 DIR.groundTruth = fullfile(DIR.dataset, 'GroundTruth');
 DIR.result = 'results/';
 
-PATH.trainingNames = fullfile(DIR.dataset, 'train.txt');
+PATH.trainingNames = fullfile(DIR.dataset, 'trainval.txt');
 PATH.testNames = fullfile(DIR.dataset, 'test.txt');
 PATH.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
 PATH.trainingPatchesSub = fullfile(DIR.result, 'trainingPatchesSubsampled.mat');
@@ -21,7 +21,7 @@ BOX.size = 15; % patch size = boxSize x boxSize
 BOX.cform = makecform('srgb2lab');
 % Forest paramters
 FOREST.dataPerTree = .25; % frequency to sample
-FOREST.numFeature = 100;
+FOREST.numFeature = 400;
 FOREST.numThreshold = 5;
 FOREST.maxDepth = 10;
 FOREST.numTree = 5;
@@ -43,22 +43,22 @@ LABELS = [...
     [128, 128, 0],   %  3. tree
                      %    [0, 0, 128],     %  4. cow COMMENT OUT LATER
                      %    [0, 128, 128],   %  5. sheep COMMENT OUT LATER
-    [128, 128, 128], %  6. sky
-    [192, 0, 0],     %  7. aeroplane
-    [64, 128, 0],    %  8. water
-    [192, 128, 0],   %  9. face
-    [64, 0, 128],    % 10. car
-    [192, 0, 128],   % 11. bicycle
-    [64, 128, 128],  % 12. flower
-    [192, 128, 128], % 13. sign
-    [0, 64, 0],      % 14. bird
+    [128, 128, 128], %  4. sky
+    [192, 0, 0],     %  5. aeroplane
+    [64, 128, 0],    %  6. water
+    [192, 128, 0],   %  7. face
+    [64, 0, 128],    %  8. car
+    [192, 0, 128],   %  9. bicycle
+    [64, 128, 128],  % 10. flower
+    [192, 128, 128], % 11. sign
+    [0, 64, 0],      % 12. bird
                      %    [128, 64, 0],    % 15. book COMMENT OUT LATER
-    [0, 192, 0],     % 16. chair
-    [128, 64, 128],  % 17. road
-    [0, 192, 128],   % 18. cat
-    [128, 192, 128], % 19. dog
-    [64, 64, 0],     % 20. body
-    [192, 64, 0]     % 21. boat
+    [0, 192, 0],     % 13. chair
+    [128, 64, 128],  % 14. road
+    [0, 192, 128],   % 15. cat
+    [128, 192, 128], % 16. dog
+    [64, 64, 0],     % 17. body
+    [192, 64, 0]     % 18. boat
                      %Color.FromArgb[128, 0, 128],   % horse
                      %Color.FromArgb[64, 0, 0],      % mountain
     ...

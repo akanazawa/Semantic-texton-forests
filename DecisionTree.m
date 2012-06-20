@@ -47,7 +47,7 @@ classdef DecisionTree < handle
 
 % data is boxSize x boxSize x N x 3
         function dist = classify(DT, data)
-            dist = zeros(size(data, 3), DT.numClass);
+            dist = zeros(DT.numClass, size(data, 3));
             ids = [1:size(data,3)];
             dist = DT.findLeafDist(DT.root, data, dist, ids);
         end
@@ -168,23 +168,24 @@ classdef DecisionTree < handle
             end
         end
         
-        function dist = findLeafDist(DT, node, data, dist, ids)
+        function dist = findLeafDist(DT, node, patches, dist, ids)
             if node.isLeaf
-                dist(ids, :) = node.distribution;
+                % assert(~all(all(dist(:, ids))));
+                % dist(:, ids) = node.distribution*ones(1,length(ids));
+                dist(:, ids) = repmat(node.distribution, [1, length(ids)]);
                 return
             end
-            [values, ~] = computeFeature(data, node.decider);
+            [values, ~] = computeFeature(patches, node.decider);
             toLeft = values < node.decider.threshold;
-            
             if sum(toLeft) ~= 0
                 dist = DT.findLeafDist(node.left, ...
                                            patches(:, :, toLeft, :), ...
-                                           dist(toLeft, :), ids(toLeft));
+                                           dist, ids(toLeft));
             end
-            if sum(toLeft)~=size(patches, 3)
+            if sum(~toLeft)~= 0
                 dist = DT.findLeafDist(node.right, ...
                                            patches(:, :, ~toLeft, :), ...
-                                           dist(~toLeft, :), ids(~toLeft));
+                                           dist, ids(~toLeft));
             end
         end
         

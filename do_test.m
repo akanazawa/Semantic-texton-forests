@@ -26,30 +26,24 @@ for i = 1:numTest
     patches = [data.patch];
     % make it d by d by N by 3
     patches = reshape(patches, size(patches, 1), ...
-                      size(patches, 1), numel(data), 3);    
-    pred = zeros(numel(data), 1);
-    dist = zeros(numClass, 1);
-    dist = forest(1).classify(patches);
-    % for j = 1:numel(data)        
-    %     dist = zeros(numClass, 1);
-    %     for t = 1:FOREST.numTree            
-    %         dist = dist + forest(t).classify(patches(:, :, j, :));
-    %     end
-    %     dist = dist./FOREST.numTree;
-    %     % normalize
-    %     dist = (dist + 1e-4./numClass)./(sum(dist) + 1e-4);
-    %     pred(j) = max(dist);
-    % end
-    I = imread(imageNames{i});
+                      size(patches, 1), numel(data), 3);        
+    dist = zeros(numClass, numel(data), FOREST.numTree);
+    for t = 1:FOREST.numTree            
+        dist(:, :, t) = forest(t).classify(patches);
+        % sfigure; bar(test(:, 550)); title(sprintf('dist of tree %d', t));
+    end
+    distAll = sum(dist, 3)./FOREST.numTree;
+    % normalize
+    distAll = bsxfun(@rdivide, distAll+(1e-4./numClass), sum(distAll)+1e-4);
+    [~, pred] = max(distAll, [], 1);
+    I = imread(fullfile(DIR.images, imageNames{i}));
     [r, c, ~] = size(I);
     pred = reshape(pred, r, c);
-    predRGB = label2rgb(pred, LABELS);
-    if DISPLAY
-        figure(1), imshow(I), hold on;
-        himage = imshow(predRGB);
-        set(himage, 'AlphaData', 0.3);
-    end
-    keyboard
+    predRGB = label2rgb(pred, LABELS./255);
+    h=figure(1); imagesc(I), hold on;
+    himage = imagesc(predRGB);
+    set(himage, 'AlphaData', 0.4);
+    print(h, fullfile(DIR.result, imageNames{i}))
     %    imwrite(fullfile(DIR.result, imageNames{i}), 'bmp');
     wait = waitbar(i/numTest, wait, sprintf(['done evaluating test ' ...
                         'image %d'], i));
