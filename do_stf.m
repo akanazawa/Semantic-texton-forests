@@ -6,7 +6,10 @@
 %
 %%%%%%%%%%%%%%%%%%%%
 config_file = 'config';
+
 %% train the forest
 do_train(config_file);
 
+%% test the forest
+do_test(config_file);
 

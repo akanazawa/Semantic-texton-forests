@@ -43,6 +43,7 @@ for i = 1:numTest
         himage = imshow(predRGB);
         set(himage, 'AlphaData', 0.3);
     end
+    keyboard
     %    imwrite(fullfile(DIR.result, imageNames{i}), 'bmp');
     wait = waitbar(i/numTest, wait, sprintf(['done evaluating test ' ...
                         'image %d'], i));

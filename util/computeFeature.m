@@ -24,3 +24,5 @@ switch feat.method
   case 4%'sub'
     val = A - B;
 end
+
+val = double(val);

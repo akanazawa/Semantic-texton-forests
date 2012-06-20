@@ -73,7 +73,7 @@ classdef DecisionTree < handle
     methods(Access=private)
         %%%%%%%%%% for learning a tree %%%%%%%%%%
         function node = computeDepthFirst(DT, node, patches, labels, depth)
-            if isempty(data), node=[];, end
+            if isempty(labels), node=[];, end
             if depth == DT.maxDepth || numel(unique(labels))==0
                 classDist = zeros(DT.numClass, 1); % will fill this out later
                 node = TreeNode(classDist, DT.numNodes, depth);

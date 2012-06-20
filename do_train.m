@@ -31,7 +31,7 @@ if ~exist(PATH.forestSkeleton, 'file')
         patches = [splits{i}.patch];
         % make it d by d by N by 3
         patches = reshape(patches, size(patches, 1), ...
-                          size(patches, 1), numel(data), 3);
+                          size(patches, 1), numel(splits{i}), 3);
         labels = double([splits{i}.label]);
         tree.trainDepthFirst(patches, labels);
         forest(i) = tree;
@@ -56,12 +56,12 @@ numTrain = numel(imageNames);
 wait = waitbar(0, 'filling the tree');
 for i = 1:numTrain
     data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
-    patches = [data.patch];
-    % make it d by d by N by 3
-    patches = reshape(patches, size(patches, 1), ...
-                      size(patches, 1), numel(data), 3);
-    labels = double([data.label]);
     if ~isempty(data)
+        patches = [data.patch];
+        % make it d by d by N by 3
+        patches = reshape(patches, size(patches, 1), ...
+                          size(patches, 1), numel(data), 3);
+        labels = double([data.label]);        
         for t = 1:FOREST.numTree
             forest(t).fillAll(patches, labels);            
         end    
@@ -69,14 +69,12 @@ for i = 1:numTrain
     wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
                         'image: %d'], i));    
 end
-close(wait);
-save(PATH.forestFilled, 'forest');
-keyboard
-%%normalize tree
+fprintf('normalize tree\n');
 for t = 1:FOREST.numTree
     forest(t).normalizeAll();
 end    
 save(PATH.forestFilled, 'forest');
 close(wait);
+
 
     
