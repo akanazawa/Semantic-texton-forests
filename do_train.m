@@ -12,9 +12,9 @@ eval(config_file); % load settings
 %% learn the splits
 if ~exist(PATH.forestSkeleton, 'file')
     % make training patches
-    if ~exist(PATH.trainingSplit, 'file')
-        splits = sampleTrainingImages(config_file);
-    else, load(PATH.trainingSplit); end
+    if ~exist(PATH.trainingPatches, 'file')
+        data = sampleTrainingImages(config_file);
+    else, load(PATH.trainingPatches); end
     % make label weights
     if ~exist(PATH.labelWeights, 'file')
         weights = computeLabelWeights(config_file);
@@ -26,18 +26,20 @@ if ~exist(PATH.forestSkeleton, 'file')
     for i = 1:FOREST.numTree
         tree = DecisionTree(FOREST.maxDepth, FOREST.numFeature, FOREST.numThreshold, ...
                             FOREST.factory, weights);
-        patches = [splits{i}.patch];
+        % randomly pick dataPerTree amount of training data for
+        % each tree
+        subData = data(rand(numel(data), 1) < FOREST.dataPerTree);
+        patches = [subData.patch];
         % make it d by d by N by 3
         patches = reshape(patches, size(patches, 1), ...
-                          size(patches, 1), numel(splits{i}), 3);
-        labels = double([splits{i}.label]);
+                          size(patches, 1), length(subData), 3);
+        labels = double([subData.label]);
         tree.trainDepthFirst(patches, labels);
         forest(i) = tree;
         wait = waitbar(i/FOREST.numTree, wait, sprintf(['finished learning ' ...
                             'tree: %d'], i));
     end
     close(wait);
-    clear splits;
     save(PATH.forestSkeleton, 'forest');
 else
     load(PATH.forestSkeleton);
@@ -45,6 +47,7 @@ end
 
 %% fill the forest
 if ~exist(PATH.forestFilled, 'file');
+    fprintf('fill the forest\n');
     fid = fopen(PATH.trainingNames, 'r');
     imageNames = textscan(fid, '%s');
     imageNames = imageNames{1};

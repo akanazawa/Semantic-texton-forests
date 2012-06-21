@@ -10,8 +10,7 @@ DIR.result = 'results/';
 
 PATH.trainingNames = fullfile(DIR.dataset, 'trainval.txt');
 PATH.testNames = fullfile(DIR.dataset, 'test.txt');
-PATH.trainingSplit = fullfile(DIR.result, 'trainingSplit.mat');
-PATH.trainingPatchesSub = fullfile(DIR.result, 'trainingPatchesSubsampled.mat');
+PATH.trainingPatches = fullfile(DIR.result, 'trainingPatches.mat');
 PATH.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
 PATH.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
 PATH.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
