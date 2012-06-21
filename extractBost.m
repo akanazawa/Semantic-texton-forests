@@ -1,24 +1,39 @@
-function bost = extractBost(I, mask, forest)
+function [bost, prior] = extractBost(I, mask, forest, d)
 %%%%%%%%%%%%%%%%%%%%
-% Given an image and a region mask, extracts bags of semantic
+% Given an image and a logical mask, extracts bags of semantic
 % textons, which is a histogram of the path each pixels in the
 % region took in the forest
+% Returns:
+%   bost - N by 1 array where N is the number of nodes in the forest. 
+%   prior - numClasses by 1 array, the region category prior  which
+%   is the average of all leaf nodes reached by each pixel in the region
 %%%%%%%%%%%%%%%%%%%%
+rad = (d-1)/2; % size of patch
+Ipad = padarray(I, [rad, rad], 'symmetric');
+maskPad = padarray(mask, [rad, rad]);
+[r, c, ~] = size(Ipad);
+Ilab = applycform(Ipad, makecform('srgb2lab'));
+[ri, ci] = ndgrid(1:r, 1:c);
+ri = ri(maskPad); ci = ci(maskPad);
+R = length(ri);
+patches = zeros(d, d, R, 3);
+for i = 1:length(ri)
+    patches(:, :, i, :) = Ilab(ri(i)-rad:ri(i)+rad, ci(i)-rad:ci(i)+rad,:);
+end
 
-region = I(mask);
 numTree = numel(forest);
-numNodes = zeros(numTree, 1);
+% do not count the roots
+numNodes = sum([forest.numNodes]) - numTree;
+bost = zeros(numNodes, 1);
+prior = zeros(forest(1).numClass, 1);
+start = 0; endInd = 0;
 for t = 1:numTree
-    numNodes(t) = forest(t).numNodes;
+    start = endInd+1;
+    endInd = endInd + forest(t).numNodes-1;    
+    [dists, hist] = forest(t).classify(patches);
+    assert(all(bost(start:endInd) == 0));
+    bost(start:endInd) = hist;
+    prior = prior + sum(dists, 2)./R;
+    keyboard
 end
-bost = sparse(sum(numNodes), numel(region));
-for i = 1:numel(region)
-    for t = 1:numTree
-        hist = forest(t).computeBost(region(i))
-        if t == 1
-            bost(1:numNodes(t), i) = hist; 
-        else 
-            bost(numNodes(t-1)+1:numNodes(t), i) = hist; 
-        end                
-    end        
-end
+prior = prior./numTree;

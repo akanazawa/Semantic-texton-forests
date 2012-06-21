@@ -67,18 +67,15 @@ else %% get patches for testing
     rad = (BOX.size-1)/2; % of patch
     I = imread(fullfile(DIR.images, fname));
     Ipad = padarray(I, [rad, rad], 'symmetric');
-    [r, c, ~] = size(Ipad);
+    [r, c, ~] = size(I);
     Ilab = applycform(Ipad, BOX.cform);    
-    indices = reshape(1:r*c, r, c);
-    indices = indices(rad+1:r-rad, rad+1:c-rad);
-    [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
-    k = 1;
-    data = struct([]);    
-    %% collect patches at each pixel
-    for j = 1:numel(indices)
-        data(k).patch = Ilab(ri(j)-rad:ri(j)+rad, ci(j)-rad:ci(j)+rad, :);
-        k = k + 1;
-    end        
-    assert((k-1)== size(I, 1)*size(I, 2));
+    [ri2, ci2] = ndgrid(1:r, 1:c);
+    ri2 = ri2(rad+1:r-rad,rad+1:c-rad); 
+    ci2 = ci2(rad+1:r-rad,rad+1:c-rad);
+    data = struct([]);
+    for i = 1:numel(ri2)
+        data(i).patch = Ilab(ri2(i)-rad:ri2(i)+rad, ci2(i)-rad:ci2(i)+rad,:);
+    end
+    data = reshape([data.patch], [BOX.size, BOX.size, numel(ri2), 3]);
 end
 

@@ -22,14 +22,11 @@ numTest = numel(imageNames);
 wait = waitbar(0, 'testing');
 
 for i = 1:numTest
-    data = getPatches(imageNames{i}, DIR, [], BOX, []);   
-    patches = [data.patch];
-    % make it d by d by N by 3
-    patches = reshape(patches, size(patches, 1), ...
-                      size(patches, 1), numel(data), 3);        
+    keyboard
+    patches = getPatches(imageNames{i}, DIR, [], BOX, []);   
     dist = zeros(numClass, numel(data), FOREST.numTree);
     for t = 1:FOREST.numTree            
-        dist(:, :, t) = forest(t).classify(patches);
+        [dist(:, :, t), ~] = forest(t).classify(patches);
         % sfigure; bar(test(:, 550)); title(sprintf('dist of tree %d', t));
     end
     distAll = sum(dist, 3)./FOREST.numTree;

@@ -45,16 +45,13 @@ classdef DecisionTree < handle
             DT.normalize(DT.root);
         end              
 
-% data is boxSize x boxSize x N x 3
-        function dist = classify(DT, data)
+        % data is boxSize x boxSize x N x 3
+        function [dist, bost] = classify(DT, data)
             dist = zeros(DT.numClass, size(data, 3));
             ids = [1:size(data,3)];
-            dist = DT.findLeafDist(DT.root, data, dist, ids);
-        end
-        
-        function bost = computeBost(DT, data)
-            bost = sparse(numNodes, 1);
-            bost = DT.findCounts(DT.root, bost, data);
+            bost = zeros(DT.numNodes, 1);    
+            [dist, bost] = DT.findLeafDist(DT.root, data, dist, ids,bost);
+            bost(1) = []; % no need to count at the root
         end
         
         function count = factoryFrequency(DT)
@@ -168,44 +165,48 @@ classdef DecisionTree < handle
             end
         end
         
-        function dist = findLeafDist(DT, node, patches, dist, ids)
+        function [dist, bost] = findLeafDist(DT, node, patches, dist, ids, bost)
+           % update the count by the total number of data that
+           % fellin there
+            bost(node.id) = length(ids);
             if node.isLeaf
                 % assert(~all(all(dist(:, ids))));
                 % dist(:, ids) = node.distribution*ones(1,length(ids));
+                % REPMAT is only fast because of lightspeed toolbox
                 dist(:, ids) = repmat(node.distribution, [1, length(ids)]);
                 return
             end
             [values, ~] = computeFeature(patches, node.decider);
             toLeft = values < node.decider.threshold;
             if sum(toLeft) ~= 0
-                dist = DT.findLeafDist(node.left, ...
+                [dist, bost] = DT.findLeafDist(node.left, ...
                                            patches(:, :, toLeft, :), ...
-                                           dist, ids(toLeft));
+                                           dist, ids(toLeft), bost);
             end
             if sum(~toLeft)~= 0
-                dist = DT.findLeafDist(node.right, ...
+                [dist, bost] = DT.findLeafDist(node.right, ...
                                            patches(:, :, ~toLeft, :), ...
-                                           dist, ids(~toLeft));
+                                           dist, ids(~toLeft), bost);
             end
         end
         
-        function bost = findCounts(DT, node, bost, data)
-           % update the count by the total number of data that
-           % fellin there
-            bost(node.id) = numel(data);
-            if ~node.isLeaf
-                [values, ~] = computeFeature(data, node.decider);
-                toLeft = values < node.decider.threshold;
-                leftData = data(toLeft);
-                rightData = data(~toLeft);
-                if ~isempty(leftData)
-                    bost = DT.findCounts(node.left, bost, leftData);
-                end
-                if ~isempty(rightData)
-                    bost = bost + DT.findCounts(node.right, bost, rightData);
-                end                
-            end
-        end
+        % function bost = findCounts(DT, node, data, bost)
+        %     bost(node.id) = size(data, 3);
+        %     if ~node.isLeaf
+        %         [values, ~] = computeFeature(data, node.decider);
+        %         toLeft = values < node.decider.threshold;
+        %         if sum(toLeft)~=0
+        %             bost = DT.findCounts(node.left, ...
+        %                                  data(:, :, toLeft, :),...
+        %                                  bost);
+        %         end
+        %         if sum(~toLeft)~=0
+        %             bost = DT.findCounts(node.right, ...
+        %                                  data(:, :, ~toLeft, :), ...
+        %                                  bost);
+        %         end                
+        %     end
+        % end
 
         function count = countSplitMethod(DT, node, count)
             if node.isLeaf, return; end
