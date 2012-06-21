@@ -22,9 +22,8 @@ numTest = numel(imageNames);
 wait = waitbar(0, 'testing');
 
 for i = 1:numTest
-    keyboard
     patches = getPatches(imageNames{i}, DIR, [], BOX, []);   
-    dist = zeros(numClass, numel(data), FOREST.numTree);
+    dist = zeros(numClass, size(patches, 3), FOREST.numTree);
     for t = 1:FOREST.numTree            
         [dist(:, :, t), ~] = forest(t).classify(patches);
         % sfigure; bar(test(:, 550)); title(sprintf('dist of tree %d', t));

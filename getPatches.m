@@ -11,11 +11,11 @@ if ~isempty(TRANSFORM)
     Ipad = padarray(I, [rad, rad], 'symmetric');
     [r, c, ~] = size(Ipad);
     Ilab = applycform(Ipad, BOX.cform);    
-    indices = reshape(1:r*c, r, c);
-    indices = indices(rad+1:r-rad, rad+1:c-rad);
-    [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
+    [ri, ci] = ndgrid(1:r, 1:c);
+    ri = ri(rad+1:r-rad,rad+1:c-rad); 
+    ci = ci(rad+1:r-rad,rad+1:c-rad);
     %% collect patches without transformation
-    for j = 1:numel(indices)
+    for j = 1:numel(ri)
         % need -rad because L wasn't padded
         gt = find(L(ri(j)-rad, ci(j)-rad, 1) == LABELS(:, 1) & ...
                       L(ri(j)-rad, ci(j)-rad, 2) == LABELS(:, 2) & ...
@@ -35,10 +35,10 @@ if ~isempty(TRANSFORM)
         Ilab2 = applycform(I2, BOX.cform);    
         Ilab2 = padarray(Ilab2, [rad, rad], 'symmetric');
         [r, c, ~] = size(Ilab2);
-        indices = reshape(1:r*c, r, c);
-        indices = indices(rad+1:r-rad, rad+1:c-rad);
-        [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
-        for j=1:numel(indices)           
+        [ri, ci] = ndgrid(1:r, 1:c);
+        ri = ri(rad+1:r-rad,rad+1:c-rad); 
+        ci = ci(rad+1:r-rad,rad+1:c-rad);
+        for j=1:numel(ri)           
             gt = find(L2(ri(j)-rad, ci(j)-rad, 1) == LABELS(:, 1) & ...
                       L2(ri(j)-rad, ci(j)-rad, 2) == LABELS(:, 2) & ...
                       L2(ri(j)-rad, ci(j)-rad, 3) == LABELS(:, 3) );            
@@ -65,15 +65,15 @@ else %% get patches for testing
     rad = (BOX.size-1)/2; % of patch
     I = imread(fullfile(DIR.images, fname));
     Ipad = padarray(I, [rad, rad], 'symmetric');
-    [r, c, ~] = size(I);
+    [r, c, ~] = size(Ipad);
     Ilab = applycform(Ipad, BOX.cform);    
-    [ri2, ci2] = ndgrid(1:r, 1:c);
-    ri2 = ri2(rad+1:r-rad,rad+1:c-rad); 
-    ci2 = ci2(rad+1:r-rad,rad+1:c-rad);
+    [ri, ci] = ndgrid(1:r, 1:c);
+    ri = ri(rad+1:r-rad,rad+1:c-rad); 
+    ci = ci(rad+1:r-rad,rad+1:c-rad);
     data = struct([]);
-    for i = 1:numel(ri2)
-        data(i).patch = Ilab(ri2(i)-rad:ri2(i)+rad, ci2(i)-rad:ci2(i)+rad,:);
+    for i = 1:numel(ri)
+        data(i).patch = Ilab(ri(i)-rad:ri(i)+rad, ci(i)-rad:ci(i)+rad,:);
     end
-    data = reshape([data.patch], [BOX.size, BOX.size, numel(ri2), 3]);
+    data = reshape([data.patch], [BOX.size, BOX.size, numel(ri), 3]);
 end
 

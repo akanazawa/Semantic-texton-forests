@@ -24,19 +24,16 @@ if ~exist(PATH.trainingPatchesSub, 'file')
         L = imread(labelNames{i});
         Ilab = applycform(I, BOX.cform);    
         [r, c, ~] = size(I);
-        indices = reshape(1:r*c, r, c);
-        indices = indices(rad+1:BOX.sampleFreq:r-rad, rad+1:BOX.sampleFreq:c-rad);
-        [ri, ci] = ind2sub([r,c], indices(:)); % subsampled center pixels of patches
-        for j = 1:numel(indices)
-            % rgb = strtrim(sprintf('%d%d%d', L(ri(j), ci(j), :)));
+        [ri, ci] = ndgrid(1:r, 1:c);
+        % subsampled center pixels of patches
+        ri = ri(rad+1:BOX.sampleFreq:r-rad,rad+1:BOX.sampleFreq:c-rad);
+        ci = ri(rad+1:BOX.sampleFreq:r-rad,rad+1:BOX.sampleFreq:c-rad);
+        for j = 1:numel(ri)
             gt = find(L(ri(j), ci(j), 1) == LABELS(:, 1) & ...
                       L(ri(j), ci(j), 2) == LABELS(:, 2) & ...
                       L(ri(j), ci(j), 3) == LABELS(:, 3) );            
             if ~isempty(gt)
                 data(k).label = gt;                            
-            % if isKey(CLASSES, rgb) 
-            %     data(k).label = CLASSES(rgb);
-            %assert(gt == CLASSES(rgb));
                 data(k).patch = Ilab(ri(j)-rad:ri(j)+rad, ci(j)-rad:ci(j)+rad, :);
                 k = k + 1;
             end        
