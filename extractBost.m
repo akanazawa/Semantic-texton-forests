@@ -34,6 +34,5 @@ for t = 1:numTree
     assert(all(bost(start:endInd) == 0));
     bost(start:endInd) = hist;
     prior = prior + sum(dists, 2)./R;
-    keyboard
 end
 prior = prior./numTree;

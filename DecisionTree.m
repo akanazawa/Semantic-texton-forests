@@ -121,7 +121,7 @@ classdef DecisionTree < handle
         end
 
         function node = computeDepthFirstByImages(DT, node, data, Is, depth)
-            if isempty(labels), node=[];, end
+            if isempty(data), node=[];, end
             if depth == DT.maxDepth || numel(unique([data.label]))==0
                 classDist = zeros(DT.numClass, 1); % will fill this out later
                 node = TreeNode(classDist, DT.numNodes, depth);
@@ -135,7 +135,8 @@ classdef DecisionTree < handle
                     DT.numNodes);
             for i = 1:DT.numFeature
                 method = mod(i, numFactory)+1; %DT.factory{mod(i, numFactory)+1};
-                [values, decider] = computeFeature(data, Is, method);
+                keyboard
+                [values, decider] = computeFeatureByImages(data, Is, method);
                 [score, threshold] = DT.computeBestThreshold(values, [data.label]);
                 if score > bestScore
                     bestScore = score;
@@ -150,11 +151,11 @@ classdef DecisionTree < handle
             DT.numNodes = DT.numNodes + 1;
             node.decider = bestDecider;
             % do the split
-            [values, ~] = computeFeature(data, bestDecider);
+            [values, ~] = computeFeatureByImages(data, bestDecider);
             toLeft = values < bestDecider.threshold;
-            node.left = DT.computeDepthFirst(TreeNode(), ...
+            node.left = DT.computeDepthFirstByImages(TreeNode(), ...
                                              data(toLeft), Ids, depth+1);
-            node.right = DT.computeDepthFirst(TreeNode(), ...
+            node.right = DT.computeDepthFirstByImages(TreeNode(), ...
                                               data(~toLeft), Ids, depth+1);
         end
 
@@ -209,10 +210,10 @@ classdef DecisionTree < handle
             node.distribution = node.distribution + ...
                    hist([data.label], 1:DT.numClass)'.*DT.labelWeights; 
             if ~node.isLeaf
-                [values, ~] = computeFeature(data, Is, node.decider);
+                [values, ~] = computeFeatureByImages(data, Is, node.decider);
                 toLeft = values < node.decider.threshold;
-                if sum(toLeft)~=0, DT.fill(node.left, data(toLeft), Is); end
-                if sum(~toLeft)~=0 DT.fill(node.right, data(~toLeft), Is); end
+                if sum(toLeft)~=0, DT.fillByImages(node.left, data(toLeft), Is); end
+                if sum(~toLeft)~=0 DT.fillByImages(node.right, data(~toLeft), Is); end
             end
         end
         
@@ -262,15 +263,15 @@ classdef DecisionTree < handle
                 dist(:, ids) = repmat(node.distribution, [1, length(ids)]);
                 return
             end
-            [values, ~] = computeFeature(data, node.decider);
+            [values, ~] = computeFeatureByImages(data, node.decider);
             toLeft = values < node.decider.threshold;
             if sum(toLeft) ~= 0
-                [dist, bost] = DT.findLeafDist(node.left, ...
+                [dist, bost] = DT.findLeafDistByImages(node.left, ...
                                            data(toLeft), ...
                                            Is, dist, ids(toLeft), bost);
             end
             if sum(~toLeft)~= 0
-                [dist, bost] = DT.findLeafDist(node.right, ...
+                [dist, bost] = DT.findLeafDistByImages(node.right, ...
                                            data(~toLeft), ...
                                            Is, dist, ids(~toLeft), bost);
             end

@@ -18,9 +18,12 @@ fid = fopen(PATH.testNames, 'r');
 imageNames = textscan(fid, '%s');
 imageNames = imageNames{1};
 fclose(fid);
+labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames, '\.bmp$', '_GT.bmp'));
+imageNamesFull = strcat([DIR.images, '/'], imageNames);
+
 numTest = numel(imageNames);
 wait = waitbar(0, 'testing');
-
+fprintf('start testing\n');
 for i = 1:numTest
     patches = getPatches(imageNames{i}, DIR, [], BOX, []);   
     dist = zeros(numClass, size(patches, 3), FOREST.numTree);
@@ -32,15 +35,22 @@ for i = 1:numTest
     % normalize
     distAll = bsxfun(@rdivide, distAll+(1e-4./numClass), sum(distAll)+1e-4);
     [~, pred] = max(distAll, [], 1);
-    I = imread(fullfile(DIR.images, imageNames{i}));
+    I = imread(imageNamesFull{i});
+    L = imread(labelNames{i});
     [r, c, ~] = size(I);
     pred = reshape(pred, r, c);
     predRGB = label2rgb(pred, LABELS./255);
-    h=figure(1); imagesc(I), hold on;
+    h=figure(1); subplot(131); imagesc(I); hold on;
     himage = imagesc(predRGB);
-    set(himage, 'AlphaData', 0.4);
-    print(h, fullfile(DIR.result, imageNames{i}))
-    %    imwrite(fullfile(DIR.result, imageNames{i}), 'bmp');
+    set(himage, 'AlphaData', 0.4); 
+    axis off image; title('overlay');
+    subplot(132); imagesc(predRGB);    axis off image; 
+    title('prediction');
+    subplot(133); imagesc(L);    axis off image; 
+    title('ground truth');
+    %    print(h, fullfile(DIR.result, imageNames{i}))
+    keyboard
+    imwrite(predRGB, fullfile(DIR.result, imageNames{i}), 'bmp');
     wait = waitbar(i/numTest, wait, sprintf(['done evaluating test ' ...
                         'image %d'], i));
 end                                   
