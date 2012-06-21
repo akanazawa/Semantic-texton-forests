@@ -26,3 +26,4 @@ switch feat.method
 end
 
 val = double(val(:));
+

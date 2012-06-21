@@ -11,9 +11,13 @@ DIR.result = 'results/';
 PATH.trainingNames = fullfile(DIR.dataset, 'trainval.txt');
 PATH.testNames = fullfile(DIR.dataset, 'test.txt');
 PATH.trainingPatches = fullfile(DIR.result, 'trainingPatches.mat');
+PATH.trainingPointsSub = fullfile(DIR.result, 'trainingPointsSub.mat');
 PATH.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
 PATH.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
 PATH.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
+PATH.forestSkeletonByImages = fullfile(DIR.result, 'forestSkeletonByImages.mat');
+PATH.forestFilledByImages = fullfile(DIR.result, 'forestFilledByImages.mat');
+
 % patch sampling parameters
 BOX.sampleFreq = 4; % space between sampled patches
 BOX.size = 15; % patch size = boxSize x boxSize

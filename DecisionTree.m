@@ -35,12 +35,23 @@ classdef DecisionTree < handle
             DT.numNodes = 1;
             DT.root = DT.computeDepthFirst(TreeNode(), patches, labels, 0);            
         end
+
+        function DT = trainDepthFirstByImages(DT, data, Is)
+            % Reset the tree
+            DT.numNodes = 1;
+            DT.root = DT.computeDepthFirstByImages(TreeNode(), data, Is, 0);            
+        end
         
         % fill the tree with all of training data
         function fillAll(DT, patches, labels)
             DT.fill(DT.root, patches, labels);
         end              
         
+        % fill the tree with all of training data
+        function fillAllByImages(DT, data, Is)
+            DT.fill(DT.root, data, Is);
+        end              
+
         function normalizeAll(DT)
             DT.normalize(DT.root);
         end              
@@ -108,7 +119,45 @@ classdef DecisionTree < handle
                                               patches(:, :, ~toLeft, :), ...
                                               labels(~toLeft), depth+1);
         end
-        
+
+        function node = computeDepthFirstByImages(DT, node, data, Is, depth)
+            if isempty(labels), node=[];, end
+            if depth == DT.maxDepth || numel(unique([data.label]))==0
+                classDist = zeros(DT.numClass, 1); % will fill this out later
+                node = TreeNode(classDist, DT.numNodes, depth);
+                DT.numNodes = DT.numNodes + 1;
+                return;
+            end
+            % if not leaf, find the best split
+            bestScore = -Inf; bestDecider = [];
+            numFactory = numel(DT.factory);
+            fprintf('computing the best feature split for node %d\n', ...
+                    DT.numNodes);
+            for i = 1:DT.numFeature
+                method = mod(i, numFactory)+1; %DT.factory{mod(i, numFactory)+1};
+                [values, decider] = computeFeature(data, Is, method);
+                [score, threshold] = DT.computeBestThreshold(values, [data.label]);
+                if score > bestScore
+                    bestScore = score;
+                    bestDecider = decider;
+                    bestDecider.threshold = threshold;
+                end            
+            end            
+            % housekeeping
+            node.distribution = zeros(DT.numClass,1);
+            node.id = DT.numNodes;
+            node.level = depth;
+            DT.numNodes = DT.numNodes + 1;
+            node.decider = bestDecider;
+            % do the split
+            [values, ~] = computeFeature(data, bestDecider);
+            toLeft = values < bestDecider.threshold;
+            node.left = DT.computeDepthFirst(TreeNode(), ...
+                                             data(toLeft), Ids, depth+1);
+            node.right = DT.computeDepthFirst(TreeNode(), ...
+                                              data(~toLeft), Ids, depth+1);
+        end
+
         function [bestScore, bestThreshold] = computeBestThreshold(DT,values, labels)
             % candidate threshold sampled from this values gaussian
             thresholds = randn(DT.numThreshold, 1).*std(values) + mean(values);
@@ -155,6 +204,18 @@ classdef DecisionTree < handle
             end
         end
         
+                %%fill the tree with data to build distributions at each leaf
+        function fillByImages(DT, node, data, Is)
+            node.distribution = node.distribution + ...
+                   hist([data.label], 1:DT.numClass)'.*DT.labelWeights; 
+            if ~node.isLeaf
+                [values, ~] = computeFeature(data, Is, node.decider);
+                toLeft = values < node.decider.threshold;
+                if sum(toLeft)~=0, DT.fill(node.left, data(toLeft), Is); end
+                if sum(~toLeft)~=0 DT.fill(node.right, data(~toLeft), Is); end
+            end
+        end
+        
         function normalize(DT, node)
         % normalize to one with dirichlet prior
             node.distribution = (node.distribution + (DT.DIRICHLET./DT.numClass))./...
@@ -189,7 +250,32 @@ classdef DecisionTree < handle
                                            dist, ids(~toLeft), bost);
             end
         end
-        
+
+        function [dist, bost] = findLeafDistByImages(DT, node, data, ...
+                                                    Is, dist, ids, bost)
+           % update the count by the total number of data that
+           % fellin there
+            bost(node.id) = length(ids);
+            if node.isLeaf
+                % dist(:, ids) = node.distribution*ones(1,length(ids));
+                % REPMAT is only fast because of lightspeed toolbox
+                dist(:, ids) = repmat(node.distribution, [1, length(ids)]);
+                return
+            end
+            [values, ~] = computeFeature(data, node.decider);
+            toLeft = values < node.decider.threshold;
+            if sum(toLeft) ~= 0
+                [dist, bost] = DT.findLeafDist(node.left, ...
+                                           data(toLeft), ...
+                                           Is, dist, ids(toLeft), bost);
+            end
+            if sum(~toLeft)~= 0
+                [dist, bost] = DT.findLeafDist(node.right, ...
+                                           data(~toLeft), ...
+                                           Is, dist, ids(~toLeft), bost);
+            end
+        end
+
         % function bost = findCounts(DT, node, data, bost)
         %     bost(node.id) = size(data, 3);
         %     if ~node.isLeaf

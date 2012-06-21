@@ -10,11 +10,15 @@ function do_train(config_file)
 DEBUG = 0;
 eval(config_file); % load settings
 %% learn the splits
-if ~exist(PATH.forestSkeleton, 'file')
-    % make training patches
-    if ~exist(PATH.trainingPatches, 'file')
-        data = sampleTrainingImages(config_file);
-    else, load(PATH.trainingPatches); end
+if ~exist(PATH.forestSkeletonByImages, 'file')
+    % % make training patches
+    % if ~exist(PATH.trainingPatches, 'file')
+    %     data = sampleTrainingImages(config_file);
+    % else, load(PATH.trainingPatches); end
+    if ~exist(PATH.trainingPointsSub, 'file')
+        [data, Is] = sampleTrainingImagesByImages(config_file);
+    else, load(PATH.trainingPointsSub); end
+
     % make label weights
     if ~exist(PATH.labelWeights, 'file')
         weights = computeLabelWeights(config_file);
@@ -29,24 +33,25 @@ if ~exist(PATH.forestSkeleton, 'file')
         % randomly pick dataPerTree amount of training data for
         % each tree
         subData = data(rand(numel(data), 1) < FOREST.dataPerTree);
-        patches = [subData.patch];
-        % make it d by d by N by 3
-        patches = reshape(patches, size(patches, 1), ...
-                          size(patches, 1), length(subData), 3);
-        labels = double([subData.label]);
-        tree.trainDepthFirst(patches, labels);
+        % patches = [subData.patch];
+        % % make it d by d by N by 3
+        % patches = reshape(patches, size(patches, 1), ...
+        %                   size(patches, 1), length(subData), 3);
+        % labels = double([subData.label]);
+        % tree.trainDepthFirst(patches, labels);
+        tree.trainDepthFirstByImages(subData, Is);
         forest(i) = tree;
         wait = waitbar(i/FOREST.numTree, wait, sprintf(['finished learning ' ...
                             'tree: %d'], i));
     end
     close(wait);
-    save(PATH.forestSkeleton, 'forest');
+    save(PATH.forestSkeletonByImages, 'forest');
 else
-    load(PATH.forestSkeleton);
+    load(PATH.forestSkeletonByImages);
 end
 
 %% fill the forest
-if ~exist(PATH.forestFilled, 'file');
+if ~exist(PATH.forestFilledByImages, 'file');
     fprintf('fill the forest\n');
     fid = fopen(PATH.trainingNames, 'r');
     imageNames = textscan(fid, '%s');
@@ -55,16 +60,26 @@ if ~exist(PATH.forestFilled, 'file');
     numTrain = numel(imageNames);
 
     wait = waitbar(0, 'filling the tree');
+    % for i = 1:numTrain
+    %     data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
+    %     if ~isempty(data)
+    %         patches = [data.patch];
+    %         % make it d by d by N by 3
+    %         patches = reshape(patches, size(patches, 1), ...
+    %                           size(patches, 1), numel(data), 3);
+    %         labels = double([data.label]);        
+    %         for t = 1:FOREST.numTree
+    %             forest(t).fillAll(patches, labels);            
+    %         end    
+    %     end
+    %     wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
+    %                         'image: %d'], i));    
+    % end
     for i = 1:numTrain
-        data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
+        [data, Is] = getPatchesByImages(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
         if ~isempty(data)
-            patches = [data.patch];
-            % make it d by d by N by 3
-            patches = reshape(patches, size(patches, 1), ...
-                              size(patches, 1), numel(data), 3);
-            labels = double([data.label]);        
             for t = 1:FOREST.numTree
-                forest(t).fillAll(patches, labels);            
+                forest(t).fillAllByImages(data, Is);            
             end    
         end
         wait = waitbar(i/numTrain, wait, sprintf(['filling training ' ...
@@ -74,7 +89,7 @@ if ~exist(PATH.forestFilled, 'file');
     for t = 1:FOREST.numTree
         forest(t).normalizeAll();
     end    
-    save(PATH.forestFilled, 'forest');
+    save(PATH.forestFilledByImages, 'forest');
     close(wait);
 end
 
