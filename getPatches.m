@@ -53,8 +53,6 @@ if ~isempty(TRANSFORM)
 
     % sanity check.. luv2rgb takes a while
     if DEBUG
-        %    patches = cell(numel(data), 1);
-        %    [patches{:}] = deal(data.patch);
         start = max([0, randi(numel(data)-5000)]);
         range = start:5:start+5000;
         debug = uint8(zeros(BOX.size, BOX.size, 3, numel(range)));

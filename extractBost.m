@@ -16,11 +16,11 @@ Ilab = applycform(Ipad, makecform('srgb2lab'));
 [ri, ci] = ndgrid(1:r, 1:c);
 ri = ri(maskPad); ci = ci(maskPad);
 R = length(ri);
-patches = zeros(d, d, R, 3);
+data = struct([]); %struct is faster than zero arrays
 for i = 1:length(ri)
-    patches(:, :, i, :) = Ilab(ri(i)-rad:ri(i)+rad, ci(i)-rad:ci(i)+rad,:);
+    data(i).patch = Ilab(ri(i)-rad:ri(i)+rad, ci(i)-rad:ci(i)+rad,:);
 end
-
+patches = reshape([data.patch], [BOX.size, BOX.size, numel(ri2), 3]);
 numTree = numel(forest);
 % do not count the roots
 numNodes = sum([forest.numNodes]) - numTree;
