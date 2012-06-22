@@ -40,16 +40,15 @@ for i = 1:numTest
     [r, c, ~] = size(I);
     pred = reshape(pred, r, c);
     predRGB = label2rgb(pred, LABELS./255);
-    h=figure(1); subplot(131); imagesc(I); hold on;
-    himage = imagesc(predRGB);
-    set(himage, 'AlphaData', 0.4); 
-    axis off image; title('overlay');
-    subplot(132); imagesc(predRGB);    axis off image; 
-    title('prediction');
-    subplot(133); imagesc(L);    axis off image; 
-    title('ground truth');
+    % h=figure(1); subplot(131); imagesc(I); hold on;
+    % himage = imagesc(predRGB);
+    % set(himage, 'AlphaData', 0.4); 
+    % axis off image; title('overlay');
+    % subplot(132); imagesc(predRGB);    axis off image; 
+    % title('prediction');
+    % subplot(133); imagesc(L);    axis off image; 
+    % title('ground truth');
     %    print(h, fullfile(DIR.result, imageNames{i}))
-    keyboard
     imwrite(predRGB, fullfile(DIR.result, imageNames{i}), 'bmp');
     wait = waitbar(i/numTest, wait, sprintf(['done evaluating test ' ...
                         'image %d'], i));
