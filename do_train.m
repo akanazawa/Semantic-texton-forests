@@ -62,6 +62,7 @@ if ~exist(PATH.forestFilled, 'file');
     wait = waitbar(0, 'filling the tree');
     for i = 1:numTrain
         data = getPatches(imageNames{i}, DIR, LABELS, BOX, TRANSFORM);
+        keyboard
         if ~isempty(data)
             patches = [data.patch];
             % make it d by d by N by 3
