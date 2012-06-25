@@ -7,7 +7,7 @@ if ~isempty(TRANSFORM)
     data = struct([]);
     rad = (BOX.size-1)/2; % of patch
     I = imread(fullfile(DIR.images, fname));
-    L = imread(fullfile(DIR.groundTruth, regexprep(fname, '\.bmp$', '_GT.bmp')));
+    L = imread(fullfile(DIR.groundTruth, regexprep(fname, '\.(bmp|jpg)$', '_GT.bmp')));
     Ipad = padarray(I, [rad, rad], 'symmetric');
     [r, c, ~] = size(Ipad);
     Ilab = applycform(Ipad, BOX.cform);    

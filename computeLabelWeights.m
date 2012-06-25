@@ -8,7 +8,7 @@ eval(config_file);
 
 fid = fopen(PATH.trainingNames, 'r');
 imageNames = textscan(fid, '%s');
-labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames{1}, '\.bmp$', '_GT.bmp'));
+labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames{1}, '\.(bmp|jpg)$', '_GT.bmp'));
 numTrain = numel(labelNames);
 fclose(fid);
 

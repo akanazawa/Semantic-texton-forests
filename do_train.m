@@ -11,7 +11,7 @@ DEBUG = 0;
 eval(config_file); % load settings
 %% learn the splits
 if ~exist(PATH.forestSkeleton, 'file')
-    % % make training patches
+    % make training patches
     if ~exist(PATH.trainingPatches, 'file')
         data = sampleTrainingImages(config_file);
     else, load(PATH.trainingPatches); end

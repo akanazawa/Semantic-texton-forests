@@ -1,20 +1,20 @@
 %%%%%%%%%%%%%%%%%%%%
 % CONFIGURATION file for STF
+% trains with MSRC and LabelMe subset
 %%%%%%%%%%%%%%%%%%%%
 % directory settings
-DIR.dataset ='/Users/kanazawa/Documents/projects/datasets/finder/Queries';
-DIR.images = fullfile(DIR.dataset);
-%DIR.groundTruth = fullfile(DIR.dataset, 'GroundTruth');
-DIR.result = 'finder/';
-DIR.exec = 'results/';
-PATH.trainingNames = fullfile(DIR.dataset, 'trainval.txt');
+DIR.dataset ='/Users/kanazawa/Documents/projects/datasets/bothMSRCLabelMe';
+DIR.images = fullfile(DIR.dataset, 'Images');
+DIR.groundTruth = fullfile(DIR.dataset, 'GroundTruth');
+DIR.result = fullfile(DIR.dataset, 'results/');
+PATH.trainingNames = fullfile(DIR.dataset, 'trainvalLabelMeonly.txt');
 PATH.testNames = fullfile(DIR.dataset, 'test.txt');
 PATH.trainingPatches = fullfile(DIR.result, 'trainingPatches.mat');
 %PATH.trainingPointsSub = fullfile(DIR.result, 'trainingPointsSub.mat');
-PATH.labelWeights = fullfile(DIR.exec, 'labelWeights.mat');
+PATH.labelWeights = fullfile(DIR.result, 'labelWeights.mat');
 PATH.forestSkeleton = fullfile(DIR.result, 'forestSkeleton.mat');
-PATH.forestFilled = fullfile(DIR.exec, 'forestFilled.mat');
-% PATH.forestSkeletonByImages = fullfile(DIR.result, 'forestSkeletonByImages.mat');
+PATH.forestFilled = fullfile(DIR.result, 'forestFilled.mat');
+% PATH.forestSkeletonpByImages = fullfile(DIR.result, 'forestSkeletonByImages.mat');
 % PATH.forestFilledByImages = fullfile(DIR.result, 'forestFilledByImages.mat');
 
 % patch sampling parameters
@@ -23,7 +23,7 @@ BOX.size = 15; % patch size = boxSize x boxSize
 BOX.cform = makecform('srgb2lab');
 % Forest paramters
 FOREST.dataPerTree = .25; % frequency to sample
-FOREST.numFeature = 400;
+FOREST.numFeature = 10;
 FOREST.numThreshold = 5;
 FOREST.maxDepth = 10;
 FOREST.numTree = 5;

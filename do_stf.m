@@ -5,7 +5,9 @@
 % based on C# code provided by Matthew Johnson
 %
 %%%%%%%%%%%%%%%%%%%%
-config_file = 'config';
+%config_file = 'config';
+config_file = 'configML'; % doing MSRC and labelme subset together
+
 
 %% train the forest
 do_train(config_file);

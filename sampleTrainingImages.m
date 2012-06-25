@@ -9,7 +9,7 @@ imageNames = textscan(fid, '%s');
 imageNames = imageNames{1};
 fclose(fid);
 
-labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames, '\.bmp$', '_GT.bmp'));
+labelNames = strcat([DIR.groundTruth, '/'], regexprep(imageNames, '\.(bmp|jpg)$', '_GT.bmp'));
 imageNames = strcat([DIR.images, '/'], imageNames);
 numTrain = numel(imageNames);
 
@@ -42,5 +42,5 @@ if ~exist(PATH.trainingPatches, 'file')
                             'image: %d'], i));
     end
     close(wait);
-    save(PATH.trainingPatches, 'data');
+    save(PATH.trainingPatches, 'data', '-v7.3');
 end
