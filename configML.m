@@ -7,7 +7,7 @@ DIR.dataset ='/Users/kanazawa/Documents/projects/datasets/bothMSRCLabelMe';
 DIR.images = fullfile(DIR.dataset, 'Images');
 DIR.groundTruth = fullfile(DIR.dataset, 'GroundTruth');
 DIR.result = fullfile(DIR.dataset, 'results/');
-PATH.trainingNames = fullfile(DIR.dataset, 'trainvalLabelMeonly.txt');
+PATH.trainingNames = fullfile(DIR.dataset, 'trainval.txt');
 PATH.testNames = fullfile(DIR.dataset, 'test.txt');
 PATH.trainingPatches = fullfile(DIR.result, 'trainingPatches.mat');
 %PATH.trainingPointsSub = fullfile(DIR.result, 'trainingPointsSub.mat');
@@ -23,7 +23,7 @@ BOX.size = 15; % patch size = boxSize x boxSize
 BOX.cform = makecform('srgb2lab');
 % Forest paramters
 FOREST.dataPerTree = .25; % frequency to sample
-FOREST.numFeature = 10;
+FOREST.numFeature = 400;
 FOREST.numThreshold = 5;
 FOREST.maxDepth = 10;
 FOREST.numTree = 5;
