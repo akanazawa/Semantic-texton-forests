@@ -4,6 +4,8 @@
 *.tex
 *.mat
 results/*.bmp
+finder
+*.html
 
 
 ### Generic Stuff ###
