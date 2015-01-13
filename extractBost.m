@@ -20,7 +20,7 @@ data = struct([]); %struct is faster than zero arrays
 for i = 1:length(ri)
     data(i).patch = Ilab(ri(i)-rad:ri(i)+rad, ci(i)-rad:ci(i)+rad,:);
 end
-patches = reshape([data.patch], [d, d, numel(ri2), 3]);
+patches = reshape([data.patch], [d, d, numel(ri), 3]);
 numTree = numel(forest);
 % do not count the roots
 numNodes = sum([forest.numNodes]) - numTree;
